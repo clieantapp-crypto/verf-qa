@@ -432,6 +432,17 @@ export async function registerRoutes(
       res.status(500).json({ error: "Failed to get analytics" });
     }
   });
+
+  // Get inbox data (users, applications, visitors combined)
+  app.get("/api/admin/inbox", async (req, res) => {
+    try {
+      const inboxData = await storage.getInboxData();
+      res.json(inboxData);
+    } catch (error) {
+      console.error("Inbox data error:", error);
+      res.status(500).json({ error: "Failed to get inbox data" });
+    }
+  });
   
   // ============= USER PROFILE ROUTES =============
   

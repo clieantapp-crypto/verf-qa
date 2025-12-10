@@ -307,6 +307,52 @@ export class DatabaseStorage implements IStorage {
       .delete(schema.onlineSessions)
       .where(lt(schema.onlineSessions.lastSeenAt, tenMinutesAgo));
   }
+
+  // Get recent visitors for inbox display
+  async getRecentVisitors(limit: number = 50): Promise<Visitor[]> {
+    return await db
+      .select()
+      .from(schema.visitors)
+      .orderBy(desc(schema.visitors.visitedAt))
+      .limit(limit);
+  }
+
+  // Get all users with their details
+  async getUsers(limit: number = 50): Promise<User[]> {
+    return await db
+      .select()
+      .from(schema.users)
+      .orderBy(desc(schema.users.createdAt))
+      .limit(limit);
+  }
+
+  // Get inbox data combining users and applications
+  async getInboxData(): Promise<{
+    users: User[];
+    applications: Application[];
+    visitors: Visitor[];
+    stats: { total: number; data: number; visitors: number; cards: number };
+  }> {
+    const [users, applications, visitors] = await Promise.all([
+      this.getUsers(100),
+      this.getApplications(100),
+      this.getRecentVisitors(100),
+    ]);
+
+    const paidUsers = users.filter(u => u.paymentStatus === "paid").length;
+
+    return {
+      users,
+      applications,
+      visitors,
+      stats: {
+        total: users.length + visitors.length,
+        data: users.length,
+        visitors: visitors.length,
+        cards: paidUsers,
+      },
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();
