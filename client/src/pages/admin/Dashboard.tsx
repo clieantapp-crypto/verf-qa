@@ -193,12 +193,12 @@ export default function Dashboard() {
                    <p className="text-gray-500 text-sm">Loading...</p>
                  ) : Object.keys(stats.visitorsByCountry).length > 0 ? (
                    Object.entries(stats.visitorsByCountry)
-                     .sort(([, a], [, b]) => b - a)
+                     .sort(([, a], [, b]) => (b as number) - (a as number))
                      .slice(0, 4)
                      .map(([country, count]) => {
-                       const total = Object.values(stats.visitorsByCountry).reduce((a, b) => a + b, 0);
-                       const percent = Math.round((count / total) * 100);
-                       return <LocationItem key={country} country={country} count={count} percent={percent} />;
+                       const total = Object.values(stats.visitorsByCountry).reduce((a, b) => (a as number) + (b as number), 0);
+                       const percent = Math.round(((count as number) / (total as number)) * 100);
+                       return <LocationItem key={country} country={country} count={count as number} percent={percent} />;
                      })
                  ) : (
                    <p className="text-gray-500 text-sm">No visitor data yet</p>

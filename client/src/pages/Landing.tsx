@@ -4,8 +4,11 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import logo from "@assets/generated_images/logo_for_tawtheeq_national_authentication_system.png";
+import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 
 export default function Landing() {
+  useVisitorTracking("/");
+  
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans" dir="rtl">
       <Header />
