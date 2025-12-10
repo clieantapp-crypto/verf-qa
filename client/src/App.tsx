@@ -9,6 +9,10 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import PaymentGateway from "@/pages/PaymentGateway";
 
+import Dashboard from "@/pages/admin/Dashboard";
+import AdminLogin from "@/pages/admin/AdminLogin";
+import Inbox from "@/pages/admin/Inbox";
+
 function Router() {
   return (
     <Switch>
@@ -16,6 +20,14 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/payment" component={PaymentGateway} />
+      
+      {/* Admin Routes */}
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/dashboard" component={Dashboard} />
+      <Route path="/admin/inbox" component={Inbox} />
+      <Route path="/admin/visitors" component={Dashboard} /> {/* Re-using dashboard for visitors demo */}
+      <Route path="/admin/settings" component={Dashboard} /> {/* Re-using dashboard for settings demo */}
+
       <Route component={NotFound} />
     </Switch>
   );

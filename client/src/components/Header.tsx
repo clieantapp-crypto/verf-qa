@@ -35,9 +35,6 @@ export function Header() {
           </Link>
         </div>
       </div>
-      <div className="bg-[#f0f2f5] py-1 border-t border-gray-100 text-center text-xs text-gray-500">
-        تم بناء هذا الموقع على Wix. أنشئ حسابك
-      </div>
     </header>
   );
 }
