@@ -7,10 +7,14 @@ import {
   TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
-  Globe
+  Globe,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { useToast } from "@/hooks/use-toast";
 import { 
   AreaChart, 
   Area, 
@@ -44,6 +48,8 @@ const submissionsData = [
 ];
 
 export default function Dashboard() {
+  const { toast } = useToast();
+  const { isConnected, stats: realtimeStats, clearNewApplication } = useWebSocket();
   const [stats, setStats] = useState({
     totalVisitors: 0,
     activeNow: 0,
@@ -76,12 +82,56 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  // Show notification for new applications
+  useEffect(() => {
+    if (realtimeStats.newApplication) {
+      toast({
+        title: "New Application Received!",
+        description: `${realtimeStats.newApplication.applicantName} submitted a new registration`,
+      });
+      setStats(prev => ({
+        ...prev,
+        applications: realtimeStats.totalApplications
+      }));
+      clearNewApplication();
+    }
+  }, [realtimeStats.newApplication]);
+
+  // Update online count from WebSocket
+  useEffect(() => {
+    if (realtimeStats.onlineCount > 0) {
+      setStats(prev => ({
+        ...prev,
+        activeNow: realtimeStats.onlineCount
+      }));
+    }
+  }, [realtimeStats.onlineCount]);
+
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-          <p className="text-gray-500">Real-time monitoring of system activity and visitor stats.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+            <p className="text-gray-500">Real-time monitoring of system activity and visitor stats.</p>
+          </div>
+          <div className={cn(
+            "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
+            isConnected ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+          )}>
+            {isConnected ? (
+              <>
+                <Wifi className="h-4 w-4" />
+                <span className="hidden sm:inline">Live</span>
+                <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+              </>
+            ) : (
+              <>
+                <WifiOff className="h-4 w-4" />
+                <span className="hidden sm:inline">Offline</span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Stats Grid */}

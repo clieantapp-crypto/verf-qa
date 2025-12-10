@@ -94,3 +94,36 @@ export const insertApplicationSchema = createInsertSchema(applications).omit({
 
 export type InsertApplication = z.infer<typeof insertApplicationSchema>;
 export type Application = typeof applications.$inferSelect;
+
+// OTP verification table
+export const userOtps = pgTable("user_otps", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull(),
+  code: text("code").notNull(), // hashed OTP code
+  purpose: text("purpose").notNull().default("registration"), // registration, password_reset
+  attempts: integer("attempts").notNull().default(0),
+  expiresAt: timestamp("expires_at").notNull(),
+  verifiedAt: timestamp("verified_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertOtpSchema = createInsertSchema(userOtps).omit({
+  id: true,
+  createdAt: true,
+  verifiedAt: true,
+});
+
+export type InsertOtp = z.infer<typeof insertOtpSchema>;
+export type UserOtp = typeof userOtps.$inferSelect;
+
+// Online sessions for tracking active users
+export const onlineSessions = pgTable("online_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: text("session_id").notNull().unique(),
+  userId: varchar("user_id"),
+  lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
+  page: text("page"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type OnlineSession = typeof onlineSessions.$inferSelect;

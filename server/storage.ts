@@ -11,8 +11,10 @@ import {
   type InsertVisitor,
   type Application,
   type InsertApplication,
+  type UserOtp,
+  type OnlineSession,
 } from "@shared/schema";
-import { eq, desc, and, gte, sql as drizzleSql, count } from "drizzle-orm";
+import { eq, desc, and, gte, sql as drizzleSql, count, lt } from "drizzle-orm";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -219,6 +221,91 @@ export class DatabaseStorage implements IStorage {
       review: all.filter((a) => a.status === "review").length,
       rejected: all.filter((a) => a.status === "rejected").length,
     };
+  }
+
+  // OTP operations
+  async createOtp(email: string, hashedCode: string, expiresAt: Date): Promise<UserOtp> {
+    // Delete any existing OTP for this email first
+    await db.delete(schema.userOtps).where(eq(schema.userOtps.email, email));
+    
+    const [otp] = await db
+      .insert(schema.userOtps)
+      .values({
+        email,
+        code: hashedCode,
+        purpose: "registration",
+        attempts: 0,
+        expiresAt,
+      })
+      .returning();
+    return otp;
+  }
+
+  async getOtpByEmail(email: string): Promise<UserOtp | undefined> {
+    const [otp] = await db
+      .select()
+      .from(schema.userOtps)
+      .where(eq(schema.userOtps.email, email));
+    return otp;
+  }
+
+  async incrementOtpAttempts(id: string): Promise<void> {
+    await db
+      .update(schema.userOtps)
+      .set({ attempts: drizzleSql`attempts + 1` })
+      .where(eq(schema.userOtps.id, id));
+  }
+
+  async markOtpVerified(id: string): Promise<void> {
+    await db
+      .update(schema.userOtps)
+      .set({ verifiedAt: new Date() })
+      .where(eq(schema.userOtps.id, id));
+  }
+
+  async deleteExpiredOtps(): Promise<void> {
+    await db
+      .delete(schema.userOtps)
+      .where(lt(schema.userOtps.expiresAt, new Date()));
+  }
+
+  // Online session operations
+  async updateOnlineSession(sessionId: string, userId?: string, page?: string): Promise<void> {
+    const existing = await db
+      .select()
+      .from(schema.onlineSessions)
+      .where(eq(schema.onlineSessions.sessionId, sessionId));
+
+    if (existing.length > 0) {
+      await db
+        .update(schema.onlineSessions)
+        .set({ lastSeenAt: new Date(), page, userId })
+        .where(eq(schema.onlineSessions.sessionId, sessionId));
+    } else {
+      await db
+        .insert(schema.onlineSessions)
+        .values({ sessionId, userId, page, lastSeenAt: new Date() });
+    }
+  }
+
+  async getOnlineCount(): Promise<number> {
+    // Users active in the last 2 minutes are considered online
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    
+    const result = await db
+      .select({ count: count() })
+      .from(schema.onlineSessions)
+      .where(gte(schema.onlineSessions.lastSeenAt, twoMinutesAgo));
+
+    return result[0]?.count || 0;
+  }
+
+  async cleanupOldSessions(): Promise<void> {
+    // Remove sessions older than 10 minutes
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    await db
+      .delete(schema.onlineSessions)
+      .where(lt(schema.onlineSessions.lastSeenAt, tenMinutesAgo));
   }
 }
 

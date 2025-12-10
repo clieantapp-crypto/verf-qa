@@ -74,6 +74,29 @@ class APIClient {
     return response.json();
   }
 
+  // OTP endpoints
+  async requestOtp(email: string): Promise<{ success: boolean; message: string; _demoCode?: string }> {
+    return this.request("/auth/otp/request", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async verifyOtp(email: string, code: string): Promise<{ success: boolean; message: string }> {
+    return this.request("/auth/otp/verify", {
+      method: "POST",
+      body: JSON.stringify({ email, code }),
+    });
+  }
+
+  // Heartbeat for online status
+  async sendHeartbeat(page: string): Promise<{ success: boolean; onlineCount: number }> {
+    return this.request("/heartbeat", {
+      method: "POST",
+      body: JSON.stringify({ page }),
+    });
+  }
+
   // Auth endpoints
   async register(data: RegistrationData) {
     return this.request("/auth/register", {

