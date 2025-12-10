@@ -28,7 +28,7 @@ export default function Register() {
       buildingNumber: "",
       area: "",
       street: "",
-    }
+    },
   });
 
   useHeartbeat("/register");
@@ -42,10 +42,7 @@ export default function Register() {
     "اكتمال التسجيل",
   ];
 
-  const existingAccountSteps = [
-    "نوع الحساب",
-    "تسجيل الدخول",
-  ];
+  const existingAccountSteps = ["نوع الحساب", "تسجيل الدخول"];
 
   const steps = isNewAccount ? newAccountSteps : existingAccountSteps;
 
@@ -55,7 +52,7 @@ export default function Register() {
   const handleAccountTypeNext = (isNew: boolean, type: string) => {
     setIsNewAccount(isNew);
     setAccountType(type);
-    setFormData(prev => ({ ...prev, accountType: type }));
+    setFormData((prev) => ({ ...prev, accountType: type }));
     nextStep();
   };
 
@@ -73,31 +70,31 @@ export default function Register() {
       <main className="flex-1 container mx-auto px-4 pb-12 max-w-3xl">
         <div className="bg-gray-100/50 rounded-lg shadow-sm border border-gray-200 overflow-hidden min-h-[600px]">
           {step === 1 && <Step1AccountType onNext={handleAccountTypeNext} />}
-          
+
           {/* Existing User Flow - Login */}
-          {!isNewAccount && step === 2 && (
-            <StepLogin onBack={prevStep} />
-          )}
-          
+          {!isNewAccount && step === 2 && <StepLogin onBack={prevStep} />}
+
           {/* New User Flow */}
           {isNewAccount && step === 2 && (
-            <Step2PersonalData 
-              onNext={handlePersonalDataNext} 
+            <Step2PersonalData
+              onNext={handlePersonalDataNext}
               onBack={prevStep}
               initialData={formData}
             />
           )}
-          {isNewAccount && step === 3 && <Step3Password onNext={nextStep} onBack={prevStep} />}
-          {isNewAccount && step === 4 && <Step4Payment onNext={nextStep} onBack={prevStep} formData={formData} />}
+          {isNewAccount && step === 3 && (
+            <Step3Password onNext={nextStep} onBack={prevStep} />
+          )}
+          {isNewAccount && step === 4 && (
+            <Step4Payment
+              onNext={nextStep}
+              onBack={prevStep}
+              formData={formData}
+            />
+          )}
           {isNewAccount && step === 5 && <Step5Success formData={formData} />}
         </div>
       </main>
-
-      <div className="fixed bottom-6 right-6 z-50">
-        <button className="bg-white p-3 rounded-full shadow-lg border border-gray-200 hover:bg-gray-50 text-primary">
-          <MessageCircle className="h-8 w-8 fill-primary text-white" />
-        </button>
-      </div>
 
       <Footer />
     </div>
