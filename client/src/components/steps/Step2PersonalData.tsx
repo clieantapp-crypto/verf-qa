@@ -13,6 +13,7 @@ interface FormData {
   dateOfBirth: string;
   gender: string;
   nationality: string;
+  accountType?: string;
   address: {
     buildingNumber: string;
     area: string;

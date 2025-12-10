@@ -5,47 +5,19 @@ import {
   Activity, 
   CreditCard, 
   TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
   Globe,
   Wifi,
-  WifiOff
+  WifiOff,
+  Clock,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  XCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar
-} from "recharts";
-
-const visitorData = [
-  { name: '00:00', visitors: 120 },
-  { name: '04:00', visitors: 80 },
-  { name: '08:00', visitors: 450 },
-  { name: '12:00', visitors: 980 },
-  { name: '16:00', visitors: 850 },
-  { name: '20:00', visitors: 340 },
-  { name: '23:59', visitors: 190 },
-];
-
-const submissionsData = [
-  { name: 'Mon', count: 45 },
-  { name: 'Tue', count: 52 },
-  { name: 'Wed', count: 38 },
-  { name: 'Thu', count: 65 },
-  { name: 'Fri', count: 48 },
-  { name: 'Sat', count: 25 },
-  { name: 'Sun', count: 15 },
-];
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -55,7 +27,7 @@ export default function Dashboard() {
     activeNow: 0,
     applications: 0,
     revenue: 0,
-    visitorsByCountry: {},
+    visitorsByCountry: {} as Record<string, number>,
     applicationsByStatus: {
       pending: 0,
       completed: 0,
@@ -64,12 +36,14 @@ export default function Dashboard() {
     },
   });
   const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState(new Date());
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const data = await api.getDashboardStats();
         setStats(data);
+        setLastUpdate(new Date());
       } catch (error) {
         console.error("Failed to fetch dashboard stats:", error);
       } finally {
@@ -78,7 +52,7 @@ export default function Dashboard() {
     };
 
     fetchStats();
-    const interval = setInterval(fetchStats, 30000); // Refresh every 30s
+    const interval = setInterval(fetchStats, 10000); // Refresh every 10s for more live updates
     return () => clearInterval(interval);
   }, []);
 
@@ -93,6 +67,7 @@ export default function Dashboard() {
         ...prev,
         applications: realtimeStats.totalApplications
       }));
+      setLastUpdate(new Date());
       clearNewApplication();
     }
   }, [realtimeStats.newApplication]);
@@ -107,30 +82,46 @@ export default function Dashboard() {
     }
   }, [realtimeStats.onlineCount]);
 
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit' 
+    });
+  };
+
+  const totalStatusCount = Object.values(stats.applicationsByStatus).reduce((a, b) => a + b, 0);
+
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-            <p className="text-gray-500">Real-time monitoring of system activity and visitor stats.</p>
+            <h1 className="text-2xl font-bold text-gray-900">Live Dashboard</h1>
+            <p className="text-gray-500">Real-time monitoring of system activity</p>
           </div>
-          <div className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
-            isConnected ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-          )}>
-            {isConnected ? (
-              <>
-                <Wifi className="h-4 w-4" />
-                <span className="hidden sm:inline">Live</span>
-                <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-              </>
-            ) : (
-              <>
-                <WifiOff className="h-4 w-4" />
-                <span className="hidden sm:inline">Offline</span>
-              </>
-            )}
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-500 flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Last update: {formatTime(lastUpdate)}
+            </div>
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
+              isConnected ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+            )}>
+              {isConnected ? (
+                <>
+                  <Wifi className="h-4 w-4" />
+                  <span className="hidden sm:inline">Live</span>
+                  <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+                </>
+              ) : (
+                <>
+                  <WifiOff className="h-4 w-4" />
+                  <span className="hidden sm:inline">Offline</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -139,153 +130,158 @@ export default function Dashboard() {
           <StatCard 
             title="Total Visitors" 
             value={loading ? "..." : stats.totalVisitors.toLocaleString()} 
-            change="+12.5%" 
-            isPositive={true}
             icon={Users}
             color="bg-blue-500"
+            isLive={false}
           />
           <StatCard 
             title="Active Now" 
             value={loading ? "..." : stats.activeNow.toString()} 
-            change="+5.2%" 
-            isPositive={true}
             icon={Activity}
             color="bg-green-500"
+            isLive={true}
           />
           <StatCard 
             title="Applications" 
             value={loading ? "..." : stats.applications.toLocaleString()} 
-            change="-2.1%" 
-            isPositive={false}
             icon={CreditCard}
             color="bg-purple-500"
+            isLive={true}
           />
           <StatCard 
             title="Revenue" 
-            value={loading ? "..." : `QAR ${(stats.revenue / 1000).toFixed(1)}k`} 
-            change="+8.4%" 
-            isPositive={true}
+            value={loading ? "..." : `QAR ${stats.revenue.toLocaleString()}`} 
             icon={TrendingUp}
             color="bg-orange-500"
+            isLive={false}
           />
         </div>
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Traffic Chart */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
+        {/* Live Data Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Application Status */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-purple-100 p-2 rounded-lg text-purple-600">
+                <FileText className="h-5 w-5" />
+              </div>
               <div>
-                <h3 className="font-bold text-gray-900">Live Traffic</h3>
-                <p className="text-sm text-gray-500">Visitor traffic over the last 24 hours</p>
-              </div>
-              <div className="flex gap-2">
-                 <span className="flex items-center gap-1 text-xs font-medium px-2 py-1 bg-green-100 text-green-700 rounded-full">
-                    <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></span>
-                    Live
-                 </span>
+                <h3 className="font-bold text-gray-900">Application Status</h3>
+                <p className="text-sm text-gray-500">Live breakdown of submissions</p>
               </div>
             </div>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={visitorData}>
-                  <defs>
-                    <linearGradient id="colorVisitors" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                  <Tooltip 
-                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                  />
-                  <Area type="monotone" dataKey="visitors" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorVisitors)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            
+            {loading ? (
+              <div className="text-center py-8 text-gray-400">Loading...</div>
+            ) : totalStatusCount === 0 ? (
+              <div className="text-center py-8 text-gray-400">No applications yet</div>
+            ) : (
+              <div className="space-y-4">
+                <StatusBar 
+                  label="Pending" 
+                  count={stats.applicationsByStatus.pending} 
+                  total={totalStatusCount}
+                  color="bg-yellow-500"
+                  icon={Clock}
+                />
+                <StatusBar 
+                  label="Under Review" 
+                  count={stats.applicationsByStatus.review} 
+                  total={totalStatusCount}
+                  color="bg-blue-500"
+                  icon={AlertCircle}
+                />
+                <StatusBar 
+                  label="Approved" 
+                  count={stats.applicationsByStatus.completed} 
+                  total={totalStatusCount}
+                  color="bg-green-500"
+                  icon={CheckCircle}
+                />
+                <StatusBar 
+                  label="Rejected" 
+                  count={stats.applicationsByStatus.rejected} 
+                  total={totalStatusCount}
+                  color="bg-red-500"
+                  icon={XCircle}
+                />
+              </div>
+            )}
           </div>
 
-          {/* Submissions Bar Chart */}
+          {/* Visitor Locations */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="mb-6">
-                <h3 className="font-bold text-gray-900">Weekly Applications</h3>
-                <p className="text-sm text-gray-500">Submitted forms per day</p>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
+                <Globe className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">Visitor Locations</h3>
+                <p className="text-sm text-gray-500">Live geographic breakdown</p>
+              </div>
             </div>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={submissionsData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                  <Tooltip 
-                    cursor={{fill: '#f8fafc'}}
-                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                  />
-                  <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+
+            {loading ? (
+              <div className="text-center py-8 text-gray-400">Loading...</div>
+            ) : Object.keys(stats.visitorsByCountry).length === 0 ? (
+              <div className="text-center py-8 text-gray-400">No visitor data yet</div>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(stats.visitorsByCountry)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([country, count]) => {
+                    const total = Object.values(stats.visitorsByCountry).reduce((a, b) => a + b, 0);
+                    const percent = Math.round((count / total) * 100);
+                    return <LocationItem key={country} country={country} count={count} percent={percent} />;
+                  })
+                }
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Live Visitors Map / List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="flex items-center gap-3 mb-4">
-                 <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
-                    <Globe className="h-5 w-5" />
-                 </div>
-                 <h3 className="font-bold text-gray-900">Visitor Locations</h3>
+        {/* Active Users Section */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-green-100 p-2 rounded-lg text-green-600">
+                <Activity className="h-5 w-5" />
               </div>
-              <div className="space-y-4">
-                 {loading ? (
-                   <p className="text-gray-500 text-sm">Loading...</p>
-                 ) : Object.keys(stats.visitorsByCountry).length > 0 ? (
-                   Object.entries(stats.visitorsByCountry)
-                     .sort(([, a], [, b]) => (b as number) - (a as number))
-                     .slice(0, 4)
-                     .map(([country, count]) => {
-                       const total = Object.values(stats.visitorsByCountry).reduce((a, b) => (a as number) + (b as number), 0);
-                       const percent = Math.round(((count as number) / (total as number)) * 100);
-                       return <LocationItem key={country} country={country} count={count as number} percent={percent} />;
-                     })
-                 ) : (
-                   <p className="text-gray-500 text-sm">No visitor data yet</p>
-                 )}
+              <div>
+                <h3 className="font-bold text-gray-900">Real-Time Activity</h3>
+                <p className="text-sm text-gray-500">Currently active users on the platform</p>
               </div>
-           </div>
+            </div>
+            <div className="flex items-center gap-2 text-green-600">
+              <span className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></span>
+              <span className="font-bold text-2xl">{stats.activeNow}</span>
+              <span className="text-sm text-gray-500">online</span>
+            </div>
+          </div>
 
-           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="flex items-center gap-3 mb-4">
-                 <div className="bg-purple-100 p-2 rounded-lg text-purple-600">
-                    <Users className="h-5 w-5" />
-                 </div>
-                 <h3 className="font-bold text-gray-900">Recent Activity</h3>
-              </div>
-              <div className="space-y-4">
-                 <ActivityItem user="Ahmed Al-Sayed" action="Submitted new application" time="2 mins ago" />
-                 <ActivityItem user="Fatima Khalil" action="Updated profile details" time="15 mins ago" />
-                 <ActivityItem user="Guest User" action="Viewed payment page" time="32 mins ago" />
-                 <ActivityItem user="System" action="Daily backup completed" time="1 hour ago" />
-              </div>
-           </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <MetricCard label="Today's Visitors" value={stats.totalVisitors} />
+            <MetricCard label="New Applications" value={stats.applications} />
+            <MetricCard label="Pending Review" value={stats.applicationsByStatus.pending} />
+            <MetricCard label="Total Revenue" value={`${stats.revenue} QAR`} />
+          </div>
         </div>
       </div>
     </AdminLayout>
   );
 }
 
-function StatCard({ title, value, change, isPositive, icon: Icon, color }: any) {
+function StatCard({ title, value, icon: Icon, color, isLive }: { title: string; value: string; icon: any; color: string; isLive?: boolean }) {
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between">
       <div>
-        <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-        <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
-        <div className={cn("flex items-center mt-2 text-xs font-medium", isPositive ? "text-green-600" : "text-red-600")}>
-          {isPositive ? <ArrowUpRight className="h-3 w-3 mr-1" /> : <ArrowDownRight className="h-3 w-3 mr-1" />}
-          {change} from last month
+        <div className="flex items-center gap-2 mb-1">
+          <p className="text-sm font-medium text-gray-500">{title}</p>
+          {isLive && (
+            <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></span>
+          )}
         </div>
+        <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
       </div>
       <div className={cn("p-3 rounded-lg text-white shadow-sm", color)}>
         <Icon className="h-5 w-5" />
@@ -294,36 +290,62 @@ function StatCard({ title, value, change, isPositive, icon: Icon, color }: any) 
   );
 }
 
-function LocationItem({ country, count, percent }: any) {
-    return (
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-                <span className="text-lg">
-                    {country === "Qatar" ? "🇶🇦" : country === "Saudi Arabia" ? "🇸🇦" : country === "UAE" ? "🇦🇪" : "🇬🇧"}
-                </span>
-                <span className="font-medium text-gray-700">{country}</span>
-            </div>
-            <div className="flex items-center gap-3 w-1/2">
-                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${percent}%` }} />
-                </div>
-                <span className="text-sm text-gray-500 w-8 text-right">{percent}%</span>
-            </div>
+function StatusBar({ label, count, total, color, icon: Icon }: { label: string; count: number; total: number; color: string; icon: any }) {
+  const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+  
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center gap-2">
+          <Icon className={cn("h-4 w-4", color.replace("bg-", "text-"))} />
+          <span className="font-medium text-gray-700">{label}</span>
         </div>
-    )
+        <span className="font-bold text-gray-900">{count}</span>
+      </div>
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className={cn("h-full rounded-full transition-all duration-500", color)} style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
 }
 
-function ActivityItem({ user, action, time }: any) {
-    return (
-        <div className="flex items-start gap-3 pb-3 border-b border-gray-50 last:border-0 last:pb-0">
-            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
-                {user.charAt(0)}
-            </div>
-            <div>
-                <p className="text-sm font-medium text-gray-900">{user}</p>
-                <p className="text-xs text-gray-500">{action}</p>
-            </div>
-            <span className="ml-auto text-xs text-gray-400">{time}</span>
+function LocationItem({ country, count, percent }: { country: string; count: number; percent: number }) {
+  const getFlag = (country: string) => {
+    const flags: Record<string, string> = {
+      "Qatar": "🇶🇦",
+      "Saudi Arabia": "🇸🇦",
+      "UAE": "🇦🇪",
+      "Kuwait": "🇰🇼",
+      "Bahrain": "🇧🇭",
+      "Oman": "🇴🇲",
+      "UK": "🇬🇧",
+      "USA": "🇺🇸",
+    };
+    return flags[country] || "🌍";
+  };
+
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <span className="text-lg">{getFlag(country)}</span>
+        <span className="font-medium text-gray-700">{country}</span>
+        <span className="text-sm text-gray-400">({count})</span>
+      </div>
+      <div className="flex items-center gap-3 w-1/2">
+        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
         </div>
-    )
+        <span className="text-sm text-gray-500 w-10 text-right">{percent}%</span>
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="bg-gray-50 p-4 rounded-lg text-center">
+      <p className="text-sm text-gray-500 mb-1">{label}</p>
+      <p className="text-xl font-bold text-gray-900">{value}</p>
+    </div>
+  );
 }
