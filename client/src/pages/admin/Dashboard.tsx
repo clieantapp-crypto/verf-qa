@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { 
   Users, 
@@ -9,6 +9,8 @@ import {
   ArrowDownRight,
   Globe
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 import { 
   AreaChart, 
   Area, 
@@ -42,6 +44,38 @@ const submissionsData = [
 ];
 
 export default function Dashboard() {
+  const [stats, setStats] = useState({
+    totalVisitors: 0,
+    activeNow: 0,
+    applications: 0,
+    revenue: 0,
+    visitorsByCountry: {},
+    applicationsByStatus: {
+      pending: 0,
+      completed: 0,
+      review: 0,
+      rejected: 0,
+    },
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await api.getDashboardStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -54,7 +88,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
             title="Total Visitors" 
-            value="12,345" 
+            value={loading ? "..." : stats.totalVisitors.toLocaleString()} 
             change="+12.5%" 
             isPositive={true}
             icon={Users}
@@ -62,7 +96,7 @@ export default function Dashboard() {
           />
           <StatCard 
             title="Active Now" 
-            value="423" 
+            value={loading ? "..." : stats.activeNow.toString()} 
             change="+5.2%" 
             isPositive={true}
             icon={Activity}
@@ -70,7 +104,7 @@ export default function Dashboard() {
           />
           <StatCard 
             title="Applications" 
-            value="1,893" 
+            value={loading ? "..." : stats.applications.toLocaleString()} 
             change="-2.1%" 
             isPositive={false}
             icon={CreditCard}
@@ -78,7 +112,7 @@ export default function Dashboard() {
           />
           <StatCard 
             title="Revenue" 
-            value="QAR 45k" 
+            value={loading ? "..." : `QAR ${(stats.revenue / 1000).toFixed(1)}k`} 
             change="+8.4%" 
             isPositive={true}
             icon={TrendingUp}
@@ -155,10 +189,20 @@ export default function Dashboard() {
                  <h3 className="font-bold text-gray-900">Visitor Locations</h3>
               </div>
               <div className="space-y-4">
-                 <LocationItem country="Qatar" count={342} percent={75} />
-                 <LocationItem country="Saudi Arabia" count={45} percent={12} />
-                 <LocationItem country="UAE" count={23} percent={8} />
-                 <LocationItem country="United Kingdom" count={12} percent={5} />
+                 {loading ? (
+                   <p className="text-gray-500 text-sm">Loading...</p>
+                 ) : Object.keys(stats.visitorsByCountry).length > 0 ? (
+                   Object.entries(stats.visitorsByCountry)
+                     .sort(([, a], [, b]) => b - a)
+                     .slice(0, 4)
+                     .map(([country, count]) => {
+                       const total = Object.values(stats.visitorsByCountry).reduce((a, b) => a + b, 0);
+                       const percent = Math.round((count / total) * 100);
+                       return <LocationItem key={country} country={country} count={count} percent={percent} />;
+                     })
+                 ) : (
+                   <p className="text-gray-500 text-sm">No visitor data yet</p>
+                 )}
               </div>
            </div>
 

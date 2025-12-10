@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { 
   Search, 
@@ -13,62 +13,32 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
-// Mock Data
-const INBOX_DATA = [
-  {
-    id: 1,
-    name: "Omar Hashim Alhashim",
-    email: "omar.h@example.com",
-    type: "New Registration",
-    status: "pending",
-    date: "10 Dec, 10:23 AM",
-    avatar: "OH"
-  },
-  {
-    id: 2,
-    name: "Sarah Ahmed",
-    email: "sarah.a@example.com",
-    type: "Payment Verification",
-    status: "completed",
-    date: "10 Dec, 09:15 AM",
-    avatar: "SA"
-  },
-  {
-    id: 3,
-    name: "Khalid Al-Mulla",
-    email: "k.mulla@example.com",
-    type: "Document Update",
-    status: "review",
-    date: "09 Dec, 04:45 PM",
-    avatar: "KA"
-  },
-  {
-    id: 4,
-    name: "Fatima Noor",
-    email: "f.noor@example.com",
-    type: "New Registration",
-    status: "pending",
-    date: "09 Dec, 02:30 PM",
-    avatar: "FN"
-  },
-  {
-    id: 5,
-    name: "John Smith",
-    email: "john.s@company.com",
-    type: "Visitor Visa",
-    status: "rejected",
-    date: "09 Dec, 11:00 AM",
-    avatar: "JS"
-  }
-];
+import { api, type Application } from "@/lib/api";
+import { formatDistanceToNow } from "date-fns";
 
 export default function Inbox() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const data = await api.getApplications();
+        setApplications(data);
+      } catch (error) {
+        console.error("Failed to fetch applications:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchApplications();
+  }, []);
 
   const filteredData = selectedStatus === "all" 
-    ? INBOX_DATA 
-    : INBOX_DATA.filter(item => item.status === selectedStatus);
+    ? applications 
+    : applications.filter(app => app.status === selectedStatus);
 
   return (
     <AdminLayout>
@@ -117,36 +87,52 @@ export default function Inbox() {
 
           {/* List */}
           <div className="overflow-auto flex-1">
-             {filteredData.map((item) => (
-                <div key={item.id} className="grid grid-cols-12 gap-4 p-4 border-b border-gray-100 items-center hover:bg-blue-50/30 transition-colors group">
-                   <div className="col-span-4 flex items-center gap-3">
-                      <Avatar className="h-9 w-9 bg-blue-100 text-blue-700 border border-blue-200">
-                         <AvatarFallback>{item.avatar}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                         <p className="font-medium text-gray-900">{item.name}</p>
-                         <p className="text-xs text-gray-500">{item.email}</p>
+             {loading ? (
+               <div className="flex items-center justify-center py-12">
+                 <p className="text-gray-500">Loading applications...</p>
+               </div>
+             ) : filteredData.length === 0 ? (
+               <div className="flex items-center justify-center py-12">
+                 <p className="text-gray-500">No applications found</p>
+               </div>
+             ) : (
+               filteredData.map((item) => {
+                 const initials = item.applicantName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                 const date = new Date(item.submittedAt);
+                 const formattedDate = formatDistanceToNow(date, { addSuffix: true });
+                 
+                 return (
+                   <div key={item.id} className="grid grid-cols-12 gap-4 p-4 border-b border-gray-100 items-center hover:bg-blue-50/30 transition-colors group" data-testid={`application-${item.id}`}>
+                      <div className="col-span-4 flex items-center gap-3">
+                         <Avatar className="h-9 w-9 bg-blue-100 text-blue-700 border border-blue-200">
+                            <AvatarFallback>{initials}</AvatarFallback>
+                         </Avatar>
+                         <div>
+                            <p className="font-medium text-gray-900" data-testid={`text-name-${item.id}`}>{item.applicantName}</p>
+                            <p className="text-xs text-gray-500" data-testid={`text-email-${item.id}`}>{item.applicantEmail}</p>
+                         </div>
+                      </div>
+                      <div className="col-span-3">
+                         <span className="text-sm text-gray-700 font-medium">{item.applicationType}</span>
+                      </div>
+                      <div className="col-span-2">
+                         <StatusBadge status={item.status} />
+                      </div>
+                      <div className="col-span-2 text-sm text-gray-500">
+                         {formattedDate}
+                      </div>
+                      <div className="col-span-1 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                         <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-blue-600" data-testid={`button-view-${item.id}`}>
+                            <Eye className="h-4 w-4" />
+                         </Button>
+                         <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600" data-testid={`button-delete-${item.id}`}>
+                            <Trash2 className="h-4 w-4" />
+                         </Button>
                       </div>
                    </div>
-                   <div className="col-span-3">
-                      <span className="text-sm text-gray-700 font-medium">{item.type}</span>
-                   </div>
-                   <div className="col-span-2">
-                      <StatusBadge status={item.status} />
-                   </div>
-                   <div className="col-span-2 text-sm text-gray-500">
-                      {item.date}
-                   </div>
-                   <div className="col-span-1 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-blue-600">
-                         <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600">
-                         <Trash2 className="h-4 w-4" />
-                      </Button>
-                   </div>
-                </div>
-             ))}
+                 );
+               })
+             )}
           </div>
           
           <div className="p-4 border-t border-gray-200 bg-gray-50 text-xs text-gray-500 flex justify-between items-center">

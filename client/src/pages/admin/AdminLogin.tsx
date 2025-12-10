@@ -1,17 +1,40 @@
-import React from "react";
+import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, User } from "lucide-react";
 import logo from "@assets/generated_images/logo_for_tawtheeq_national_authentication_system.png";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminLogin() {
   const [_, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [username, setUsername] = useState("admin");
+  const [password, setPassword] = useState("admin123");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLocation("/admin/dashboard");
+    setIsLoading(true);
+
+    try {
+      await api.adminLogin({ username, password });
+      toast({
+        title: "Login successful",
+        description: "Welcome to the admin panel",
+      });
+      setLocation("/admin/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid credentials",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -31,19 +54,37 @@ export default function AdminLogin() {
                     <Label>Username</Label>
                     <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <Input className="pl-10" placeholder="admin" defaultValue="admin" />
+                        <Input 
+                          className="pl-10" 
+                          placeholder="admin" 
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          data-testid="input-username"
+                        />
                     </div>
                 </div>
                 <div className="space-y-2">
                     <Label>Password</Label>
                     <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <Input className="pl-10" type="password" placeholder="••••••••" defaultValue="password" />
+                        <Input 
+                          className="pl-10" 
+                          type="password" 
+                          placeholder="••••••••" 
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          data-testid="input-password"
+                        />
                     </div>
                 </div>
                 
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 h-11 text-base mt-4">
-                    Sign In
+                <Button 
+                  className="w-full bg-blue-600 hover:bg-blue-700 h-11 text-base mt-4"
+                  type="submit"
+                  disabled={isLoading}
+                  data-testid="button-login"
+                >
+                    {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
             </form>
         </div>
