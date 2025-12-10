@@ -160,6 +160,10 @@ class APIClient {
   async getInboxData(): Promise<InboxData> {
     return this.request("/admin/inbox");
   }
+
+  async getUserFormData(userId: string): Promise<User & { applicationId?: string; applicationStatus?: string; submittedAt?: string }> {
+    return this.request(`/admin/users/${userId}/form`);
+  }
 }
 
 export interface User {

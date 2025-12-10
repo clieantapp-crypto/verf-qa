@@ -353,6 +353,27 @@ export class DatabaseStorage implements IStorage {
       },
     };
   }
+
+  // Get complete user registration form data
+  async getUserWithApplicationData(userId: string): Promise<(User & { applicationId?: string; applicationStatus?: string; submittedAt?: Date }) | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+
+    const applications = await db
+      .select()
+      .from(schema.applications)
+      .where(eq(schema.applications.userId, userId))
+      .orderBy(desc(schema.applications.submittedAt))
+      .limit(1);
+
+    const app = applications[0];
+    return {
+      ...user,
+      applicationId: app?.id,
+      applicationStatus: app?.status,
+      submittedAt: app?.submittedAt,
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();

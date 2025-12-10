@@ -443,6 +443,21 @@ export async function registerRoutes(
       res.status(500).json({ error: "Failed to get inbox data" });
     }
   });
+
+  // Get user full form submission data
+  app.get("/api/admin/users/:id/form", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userData = await storage.getUserWithApplicationData(id);
+      if (!userData) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json(userData);
+    } catch (error) {
+      console.error("Get user form data error:", error);
+      res.status(500).json({ error: "Failed to get user form data" });
+    }
+  });
   
   // ============= USER PROFILE ROUTES =============
   
