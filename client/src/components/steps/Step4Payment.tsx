@@ -137,8 +137,8 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
           title: "تم الدفع بنجاح",
           description: "تمت عملية الدفع وتسجيل حسابك بنجاح",
         });
-        // Redirect to success/home
-        setLocation("/");
+        // Complete registration and show success
+        onNext();
       } else {
         setOtpError("رمز التحقق غير صحيح");
         setOtpDigits(["", "", "", "", "", ""]);

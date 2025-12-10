@@ -7,6 +7,7 @@ import { StepLogin } from "@/components/steps/StepLogin";
 import { Step2PersonalData } from "@/components/steps/Step2PersonalData";
 import { Step3Password } from "@/components/steps/Step3Password";
 import { Step4Payment } from "@/components/steps/Step4Payment";
+import { Step5Success } from "@/components/steps/Step5Success";
 import { MessageCircle } from "lucide-react";
 import { useHeartbeat } from "@/hooks/useHeartbeat";
 
@@ -38,6 +39,7 @@ export default function Register() {
     "البيانات الشخصية",
     "كلمة المرور",
     "الدفع",
+    "اكتمال التسجيل",
   ];
 
   const existingAccountSteps = [
@@ -87,6 +89,7 @@ export default function Register() {
           )}
           {isNewAccount && step === 3 && <Step3Password onNext={nextStep} onBack={prevStep} />}
           {isNewAccount && step === 4 && <Step4Payment onNext={nextStep} onBack={prevStep} formData={formData} />}
+          {isNewAccount && step === 5 && <Step5Success formData={formData} />}
         </div>
       </main>
 
