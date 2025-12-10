@@ -20,14 +20,14 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/payment" component={PaymentGateway} />
-      
       {/* Admin Routes */}
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={Dashboard} />
       <Route path="/admin/inbox" component={Inbox} />
-      <Route path="/admin/visitors" component={Dashboard} /> {/* Re-using dashboard for visitors demo */}
-      <Route path="/admin/settings" component={Dashboard} /> {/* Re-using dashboard for settings demo */}
-
+      <Route path="/admin/visitors" component={Dashboard} />{" "}
+      {/* Re-using dashboard for visitors demo */}
+      <Route path="/admin/settings" component={Dashboard} />{" "}
+      {/* Re-using dashboard for settings demo */}
       <Route component={NotFound} />
     </Switch>
   );
@@ -35,12 +35,14 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <div className="min-h-screen flex flex-col bg-gray-50 font-sans" dir="rtl">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </div>
   );
 }
 
