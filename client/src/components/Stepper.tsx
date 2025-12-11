@@ -34,7 +34,7 @@ export function Stepper({ currentStep, steps }: StepperProps) {
                   </div>
                   <span 
                     className={cn(
-                      "text-[10px] md:text-sm font-medium text-center transition-colors duration-300",
+                      "text-[10px] md:text-sm font-medium text-center transition-colors duration-300 hidden sm:block",
                       isActive ? "text-primary font-bold" : "text-gray-400"
                     )}
                   >
