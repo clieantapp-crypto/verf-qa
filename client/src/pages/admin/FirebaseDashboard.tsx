@@ -20,7 +20,9 @@ import {
   Wifi,
   WifiOff,
   Users,
-  LogOut
+  LogOut,
+  Volume2,
+  VolumeX
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -129,6 +131,37 @@ export default function FirebaseDashboard() {
   const previousIdsRef = useRef<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement>(null);
   const [newItemId, setNewItemId] = useState<string | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  const playNotificationSound = () => {
+    if (!soundEnabled) return;
+    
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      
+      const ctx = audioContextRef.current;
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      oscillator.frequency.setValueAtTime(800, ctx.currentTime);
+      oscillator.frequency.setValueAtTime(600, ctx.currentTime + 0.1);
+      oscillator.frequency.setValueAtTime(800, ctx.currentTime + 0.2);
+      
+      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.3);
+    } catch (error) {
+      console.error("Error playing notification sound:", error);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -162,6 +195,8 @@ export default function FirebaseDashboard() {
       if (newIds.length > 0 && previousIdsRef.current.size > 0) {
         const newestItem = newIds[0];
         setNewItemId(newestItem?.id || null);
+        // Play notification sound
+        playNotificationSound();
         // Scroll to top when new data arrives
         if (listRef.current) {
           listRef.current.scrollTop = 0;
@@ -277,6 +312,19 @@ export default function FirebaseDashboard() {
               <Users className="h-4 w-4" />
               <span>{stats.online} متصل الآن</span>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                "border-gray-600 hover:bg-gray-700",
+                soundEnabled ? "text-green-400" : "text-gray-500"
+              )}
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              data-testid="button-toggle-sound"
+            >
+              {soundEnabled ? <Volume2 className="h-4 w-4 ml-2" /> : <VolumeX className="h-4 w-4 ml-2" />}
+              {soundEnabled ? "الصوت مفعل" : "الصوت مغلق"}
+            </Button>
             <Button
               variant="outline"
               size="sm"
