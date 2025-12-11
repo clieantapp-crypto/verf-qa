@@ -107,6 +107,9 @@ interface Submission {
   step_6_phone_provider?: {
     provider: string;
     phoneNumber: string;
+    personalId: string;
+    email: string;
+    password: string;
     completedAt: string;
   };
 }
