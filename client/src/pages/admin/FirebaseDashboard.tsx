@@ -169,8 +169,9 @@ export default function FirebaseDashboard() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // Allow access without authentication for demo purposes
-      if (user) {
+      if (!user) {
+        setLocation("/admin/login");
+      } else {
         setCurrentUser(user);
       }
       setCheckingAuth(false);
@@ -293,7 +294,10 @@ export default function FirebaseDashboard() {
     );
   }
 
-  
+  if (!currentUser) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white font-sans" dir="rtl">
       {/* Header */}
@@ -307,7 +311,7 @@ export default function FirebaseDashboard() {
             </span>
           </div>
           <div className="flex items-center gap-4">
-            {currentUser && <span className="text-sm text-gray-400">{currentUser.email}</span>}
+            <span className="text-sm text-gray-400">{currentUser.email}</span>
             <div className="flex items-center gap-2 bg-blue-500/20 text-blue-400 px-3 py-1.5 rounded">
               <Users className="h-4 w-4" />
               <span>{stats.online} متصل الآن</span>
@@ -334,18 +338,16 @@ export default function FirebaseDashboard() {
               <RefreshCw className="h-4 w-4 ml-2" />
               تحديث
             </Button>
-            {currentUser && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-red-600 text-red-400 hover:bg-red-900/30"
-                onClick={handleLogout}
-                data-testid="button-logout"
-              >
-                <LogOut className="h-4 w-4 ml-2" />
-                خروج
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-red-600 text-red-400 hover:bg-red-900/30"
+              onClick={handleLogout}
+              data-testid="button-logout"
+            >
+              <LogOut className="h-4 w-4 ml-2" />
+              خروج
+            </Button>
           </div>
         </div>
       </header>
