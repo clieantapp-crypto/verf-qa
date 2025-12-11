@@ -28,6 +28,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { formatDistanceToNow } from "date-fns";
+import { ar } from "date-fns/locale";
 import { 
   subscribeToSubmissions, 
   subscribeToPayments, 
@@ -240,6 +242,18 @@ export default function FirebaseDashboard() {
     return user?.currentPage || "";
   };
 
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return "";
+    try {
+      const date = timestamp.seconds 
+        ? new Date(timestamp.seconds * 1000) 
+        : timestamp.toDate?.() || new Date(timestamp);
+      return formatDistanceToNow(date, { addSuffix: true, locale: ar });
+    } catch {
+      return "";
+    }
+  };
+
   const handleDelete = async (submissionId: string) => {
     if (window.confirm("هل أنت متأكد من حذف هذا التسجيل؟")) {
       // Delete submission, payment, and online status
@@ -254,7 +268,14 @@ export default function FirebaseDashboard() {
     }
   };
 
-  const filteredSubmissions = submissions.filter((sub) => {
+  // Sort submissions by date (newest first)
+  const sortedSubmissions = [...submissions].sort((a, b) => {
+    const dateA = a.updatedAt?.seconds || a.updatedAt?.toMillis?.() || 0;
+    const dateB = b.updatedAt?.seconds || b.updatedAt?.toMillis?.() || 0;
+    return dateB - dateA;
+  });
+
+  const filteredSubmissions = sortedSubmissions.filter((sub) => {
     const matchesSearch = 
       sub.step_2_personal_data?.fullNameArabic?.includes(searchQuery) ||
       sub.step_2_personal_data?.fullNameEnglish?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -464,6 +485,10 @@ export default function FirebaseDashboard() {
                       </div>
                       <p className="text-sm text-gray-400 truncate">
                         {sub.step_2_personal_data?.email || "لا يوجد بريد"}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        <Clock className="h-3 w-3 inline ml-1" />
+                        {formatDate(sub.updatedAt) || "غير محدد"}
                       </p>
                       {isUserOnline(sub.visitorId) && (
                         <p className="text-xs text-blue-400 mt-1">
