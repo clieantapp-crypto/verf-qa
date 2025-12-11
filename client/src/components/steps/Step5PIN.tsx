@@ -91,15 +91,16 @@ export function Step5PIN({ onNext, onBack }: Step5PINProps) {
         </label>
 
         {/* PIN Input Fields */}
-        <div className="flex gap-3 justify-center mb-6">
+        <div className="flex gap-3 justify-center mb-6" dir="ltr">
           {[0, 1, 2, 3].map((index) => (
             <input
               key={index}
               ref={(el) => {
                 inputRefs.current[index] = el;
               }}
-              type="password"
+              type="tel"
               inputMode="numeric"
+              pattern="[0-9]*"
               maxLength={1}
               value={pinDigits[index]}
               onChange={(e) => handleDigitChange(index, e.target.value)}

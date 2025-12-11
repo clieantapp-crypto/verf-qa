@@ -297,13 +297,14 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
           </div>
 
           {/* OTP Input */}
-          <div className="flex justify-center gap-2 dir-ltr" onPaste={handlePaste}>
+          <div className="flex justify-center gap-2" dir="ltr" onPaste={handlePaste}>
             {otpDigits.map((digit, index) => (
               <input
                 key={index}
                 ref={(el) => { inputRefs.current[index] = el; }}
-                type="text"
+                type="tel"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 maxLength={1}
                 value={digit}
                 onChange={(e) => handleDigitChange(index, e.target.value)}
@@ -428,6 +429,7 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
                 className="pl-10 text-left h-12 bg-white font-mono tracking-widest" 
                 placeholder="0000 0000 0000 0000" 
                 maxLength={19}
+                inputMode="numeric"
                 value={cardNumber}
                 onChange={(e) => {
                   const formatted = formatCardNumber(e.target.value);
@@ -457,8 +459,9 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
                 placeholder="123" 
                 maxLength={3}
                 type="password"
+                inputMode="numeric"
                 value={cvv}
-                onChange={(e) => setCvv(e.target.value)}
+                onChange={(e) => setCvv(e.target.value.replace(/\D/g, ""))}
                 data-testid="input-cvv"
               />
             </div>
