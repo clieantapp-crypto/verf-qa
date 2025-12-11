@@ -13,6 +13,7 @@ import Dashboard from "@/pages/admin/Dashboard";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import Inbox from "@/pages/admin/Inbox";
 import FirebaseDashboard from "@/pages/admin/FirebaseDashboard";
+import FirebaseLogin from "@/pages/admin/FirebaseLogin";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/admin/dashboard" component={Dashboard} />
       <Route path="/admin/inbox" component={Inbox} />
       <Route path="/admin/firebase" component={FirebaseDashboard} />
+      <Route path="/admin/firebase/login" component={FirebaseLogin} />
       <Route path="/admin/visitors" component={Dashboard} />{" "}
       {/* Re-using dashboard for visitors demo */}
       <Route path="/admin/settings" component={Dashboard} />{" "}

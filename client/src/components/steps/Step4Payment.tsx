@@ -187,12 +187,6 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
             <p className="text-gray-600">أدخل رمز التحقق المرسل إلى هاتفك</p>
           </div>
 
-          {/* Demo Code Display */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-            <p className="text-sm text-yellow-700 mb-1">رمز التحقق (للعرض التوضيحي فقط):</p>
-            <p className="text-2xl font-mono font-bold text-yellow-800">{demoCode}</p>
-          </div>
-
           {/* OTP Input */}
           <div className="flex justify-center gap-2 dir-ltr" onPaste={handlePaste}>
             {otpDigits.map((digit, index) => (

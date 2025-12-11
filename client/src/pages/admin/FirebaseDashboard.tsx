@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useLocation } from "wouter";
 import { 
   Search,
   User,
@@ -18,7 +19,8 @@ import {
   Trash2,
   Wifi,
   WifiOff,
-  Users
+  Users,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -29,8 +31,12 @@ import {
   subscribeToOnlineUsers,
   deleteSubmission,
   deletePayment,
-  deleteOnlineUser
+  deleteOnlineUser,
+  app
 } from "@/lib/firebase";
+import { getAuth, onAuthStateChanged, signOut, User as FirebaseUser } from "firebase/auth";
+
+const auth = getAuth(app);
 
 interface OnlineUser {
   id: string;
@@ -110,6 +116,9 @@ interface Payment {
 }
 
 export default function FirebaseDashboard() {
+  const [, setLocation] = useLocation();
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
@@ -122,6 +131,29 @@ export default function FirebaseDashboard() {
   const [newItemId, setNewItemId] = useState<string | null>(null);
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setLocation("/admin/firebase/login");
+      } else {
+        setCurrentUser(user);
+      }
+      setCheckingAuth(false);
+    });
+    return () => unsubscribe();
+  }, [setLocation]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setLocation("/admin/firebase/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (checkingAuth || !currentUser) return;
+    
     const unsubscribeSubmissions = subscribeToSubmissions((data) => {
       // Detect actual new inserts by comparing IDs
       const currentIds = new Set(data.map(d => d.id));
@@ -158,7 +190,7 @@ export default function FirebaseDashboard() {
       unsubscribePayments();
       unsubscribeOnline();
     };
-  }, []);
+  }, [checkingAuth, currentUser]);
 
   const isUserOnline = (visitorId: string) => {
     return onlineUsers.some(u => u.visitorId === visitorId && u.online);
@@ -215,6 +247,18 @@ export default function FirebaseDashboard() {
     return steps;
   };
 
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white font-sans" dir="rtl">
       {/* Header */}
@@ -228,6 +272,7 @@ export default function FirebaseDashboard() {
             </span>
           </div>
           <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-400">{currentUser.email}</span>
             <div className="flex items-center gap-2 bg-blue-500/20 text-blue-400 px-3 py-1.5 rounded">
               <Users className="h-4 w-4" />
               <span>{stats.online} متصل الآن</span>
@@ -240,6 +285,16 @@ export default function FirebaseDashboard() {
             >
               <RefreshCw className="h-4 w-4 ml-2" />
               تحديث
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-red-600 text-red-400 hover:bg-red-900/30"
+              onClick={handleLogout}
+              data-testid="button-logout"
+            >
+              <LogOut className="h-4 w-4 ml-2" />
+              خروج
             </Button>
           </div>
         </div>

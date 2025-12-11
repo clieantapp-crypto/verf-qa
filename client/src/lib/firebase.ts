@@ -30,6 +30,8 @@ const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const database = getDatabase(app);
 
+export { app };
+
 function getVisitorId(): string {
   let visitorId = localStorage.getItem("visitor");
   if (!visitorId) {

@@ -86,12 +86,6 @@ export function Step5PIN({ onNext, onBack }: Step5PINProps) {
       </div>
 
       <div className="max-w-md mx-auto">
-        {/* Demo Code Display */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <p className="text-sm text-blue-700 mb-2">🔍 رمز التجربة (للعرض التوضيحي فقط):</p>
-          <p className="text-lg font-mono font-bold text-blue-900 tracking-widest">{demoCode}</p>
-        </div>
-
         <label className="block text-sm font-medium text-gray-700 mb-4 text-center">
           الرقم السري لبطاقة الصراف التلقائي
         </label>
