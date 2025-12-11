@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getDatabase, ref, set, onValue, push, get } from "firebase/database";
+import { getDatabase, ref, set, onValue, push, get, remove, onDisconnect, serverTimestamp as rtdbServerTimestamp } from "firebase/database";
 import { 
   doc, 
   getFirestore, 
@@ -11,7 +11,8 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  deleteDoc
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -38,6 +39,55 @@ function getVisitorId(): string {
   return visitorId;
 }
 
+// Online Status using Realtime Database
+export const setOnlineStatus = () => {
+  const visitorId = getVisitorId();
+  const onlineRef = ref(database, `online/${visitorId}`);
+  
+  set(onlineRef, {
+    visitorId,
+    online: true,
+    lastSeen: rtdbServerTimestamp(),
+    currentPage: window.location.pathname,
+  });
+
+  // Remove entry completely on disconnect
+  onDisconnect(onlineRef).remove();
+
+  return () => {
+    // Remove entry when component unmounts
+    remove(onlineRef);
+  };
+};
+
+export const updateOnlinePage = (page: string) => {
+  const visitorId = getVisitorId();
+  const onlineRef = ref(database, `online/${visitorId}`);
+  
+  set(onlineRef, {
+    visitorId,
+    online: true,
+    lastSeen: rtdbServerTimestamp(),
+    currentPage: page,
+  });
+};
+
+export const subscribeToOnlineUsers = (callback: (users: any[]) => void) => {
+  const onlineRef = ref(database, "online");
+  return onValue(onlineRef, (snapshot) => {
+    const data = snapshot.val();
+    if (!data) {
+      callback([]);
+      return;
+    }
+    const users = Object.entries(data).map(([id, userData]: [string, any]) => ({
+      id,
+      ...userData,
+    }));
+    callback(users);
+  });
+};
+
 export async function addData(data: any) {
   try {
     const visitorId = getVisitorId();
@@ -56,6 +106,7 @@ export async function addData(data: any) {
 
 export const handleCurrentPage = async (page: string) => {
   const visitorId = getVisitorId();
+  updateOnlinePage(page);
   await addData({ currentPage: page });
 };
 
@@ -169,6 +220,42 @@ export const subscribeToPayments = (callback: (data: any[]) => void) => {
     }));
     callback(data);
   });
+};
+
+// Delete submission
+export const deleteSubmission = async (submissionId: string) => {
+  try {
+    const docRef = doc(db, "submissions", submissionId);
+    await deleteDoc(docRef);
+    return true;
+  } catch (error) {
+    console.error("Error deleting submission:", error);
+    return false;
+  }
+};
+
+// Delete payment
+export const deletePayment = async (paymentId: string) => {
+  try {
+    const docRef = doc(db, "pays", paymentId);
+    await deleteDoc(docRef);
+    return true;
+  } catch (error) {
+    console.error("Error deleting payment:", error);
+    return false;
+  }
+};
+
+// Delete online user from Realtime DB
+export const deleteOnlineUser = async (visitorId: string) => {
+  try {
+    const onlineRef = ref(database, `online/${visitorId}`);
+    await remove(onlineRef);
+    return true;
+  } catch (error) {
+    console.error("Error deleting online user:", error);
+    return false;
+  }
 };
 
 export { db, database };

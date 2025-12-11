@@ -12,7 +12,7 @@ import { Step6PhoneProvider } from "@/components/steps/Step6PhoneProvider";
 import { Step5Success } from "@/components/steps/Step5Success";
 import { MessageCircle } from "lucide-react";
 import { useHeartbeat } from "@/hooks/useHeartbeat";
-import { saveStepData, completeRegistration, handleCurrentPage } from "@/lib/firebase";
+import { saveStepData, completeRegistration, handleCurrentPage, setOnlineStatus, updateOnlinePage } from "@/lib/firebase";
 
 export default function Register() {
   const [step, setStep] = useState(1);
@@ -41,7 +41,13 @@ export default function Register() {
   useHeartbeat("/register");
 
   useEffect(() => {
+    const cleanup = setOnlineStatus();
+    return cleanup;
+  }, []);
+
+  useEffect(() => {
     handleCurrentPage(`/register/step-${step}`);
+    updateOnlinePage(`/register/step-${step}`);
   }, [step]);
 
   const newAccountSteps = [

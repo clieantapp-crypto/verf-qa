@@ -1,13 +1,20 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import logo from "@assets/generated_images/logo_for_tawtheeq_national_authentication_system.png";
 import { useVisitorTracking } from "@/hooks/useVisitorTracking";
+import { setOnlineStatus, updateOnlinePage } from "@/lib/firebase";
 
 export default function Landing() {
   useVisitorTracking("/");
+  
+  useEffect(() => {
+    const cleanup = setOnlineStatus();
+    updateOnlinePage("/");
+    return cleanup;
+  }, []);
   
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans" dir="rtl">

