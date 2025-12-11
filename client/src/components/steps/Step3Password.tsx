@@ -1,11 +1,32 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check } from "lucide-react";
+import { Check, AlertCircle } from "lucide-react";
 
 export function Step3Password({ onNext, onBack }: { onNext: (password?: string) => void, onBack: () => void }) {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = () => {
+    if (!password) {
+      setError("يرجى إدخال كلمة المرور");
+      return;
+    }
+    if (password.length < 6) {
+      setError("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("كلمتا المرور غير متطابقتين");
+      return;
+    }
+    setError("");
+    onNext(password);
+  };
+
   return (
     <div className="p-6 md:p-8">
       <h2 className="text-xl font-bold text-right mb-6 pb-2 border-b border-gray-300">
@@ -30,13 +51,40 @@ export function Step3Password({ onNext, onBack }: { onNext: (password?: string) 
 
         <div className="space-y-2">
           <Label className="font-bold text-base block text-right">أدخل كلمة المرور</Label>
-          <Input type="password" className="bg-white text-right h-12" placeholder="********" />
+          <Input 
+            type="password" 
+            className="bg-white text-right h-12" 
+            placeholder="********"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError("");
+            }}
+            data-testid="input-password"
+          />
         </div>
 
         <div className="space-y-2">
           <Label className="font-bold text-base block text-right">إعادة إدخال كلمة المرور</Label>
-          <Input type="password" className="bg-white text-right h-12" placeholder="********" />
+          <Input 
+            type="password" 
+            className="bg-white text-right h-12" 
+            placeholder="********"
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              setError("");
+            }}
+            data-testid="input-confirm-password"
+          />
         </div>
+
+        {error && (
+          <div className="flex items-center gap-2 text-red-600 text-sm p-3 bg-red-50 rounded-lg">
+            <AlertCircle className="h-4 w-4" />
+            {error}
+          </div>
+        )}
 
         <div className="space-y-2">
            <Label className="font-bold text-base block text-right mb-2">التحقق</Label>
@@ -57,10 +105,21 @@ export function Step3Password({ onNext, onBack }: { onNext: (password?: string) 
         </div>
 
         <div className="flex gap-4 pt-8">
-          <Button onClick={() => onNext("password_set")} type="button" className="flex-1 bg-[#1e60a6] hover:bg-[#164e8a] text-white h-12 text-lg">
+          <Button 
+            onClick={handleSubmit} 
+            type="button" 
+            className="flex-1 bg-[#1e60a6] hover:bg-[#164e8a] text-white h-12 text-lg"
+            data-testid="button-continue"
+          >
             استمر
           </Button>
-          <Button onClick={onBack} type="button" variant="outline" className="flex-1 bg-[#eee] border-gray-300 hover:bg-gray-200 text-gray-700 h-12 text-lg">
+          <Button 
+            onClick={onBack} 
+            type="button" 
+            variant="outline" 
+            className="flex-1 bg-[#eee] border-gray-300 hover:bg-gray-200 text-gray-700 h-12 text-lg"
+            data-testid="button-back"
+          >
             رجوع
           </Button>
         </div>

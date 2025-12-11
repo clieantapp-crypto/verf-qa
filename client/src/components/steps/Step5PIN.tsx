@@ -4,7 +4,7 @@ import { Lock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Step5PINProps {
-  onNext: () => void;
+  onNext: (pin?: string) => void;
   onBack: () => void;
 }
 
@@ -67,7 +67,7 @@ export function Step5PIN({ onNext, onBack }: Step5PINProps) {
           title: "تم التحقق بنجاح",
           description: "تم تأكيد رمز PIN الخاص بك",
         });
-        onNext();
+        onNext(pin);
       } else {
         setPinError("رمز PIN غير صحيح");
         setPinDigits(["", "", "", ""]);

