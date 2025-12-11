@@ -133,7 +133,7 @@ export default function FirebaseDashboard() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
-        setLocation("/admin/firebase/login");
+        setLocation("/admin/login");
       } else {
         setCurrentUser(user);
       }
@@ -145,7 +145,7 @@ export default function FirebaseDashboard() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setLocation("/admin/firebase/login");
+      setLocation("/admin/login");
     } catch (error) {
       console.error("Logout error:", error);
     }

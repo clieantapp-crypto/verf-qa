@@ -25,7 +25,7 @@ export default function FirebaseLogin() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        setLocation("/admin/firebase");
+        setLocation("/admin");
       }
       setCheckingAuth(false);
     });
@@ -39,7 +39,7 @@ export default function FirebaseLogin() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      setLocation("/admin/firebase");
+      setLocation("/admin");
     } catch (err: any) {
       console.error("Login error:", err);
       if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
