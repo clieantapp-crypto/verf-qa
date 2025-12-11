@@ -786,10 +786,10 @@ export default function FirebaseDashboard() {
                 </div>
 
                 {/* Step Progress */}
-                <div className="flex flex-wrap gap-2 mt-4">
+                <div className="flex flex-wrap gap-1 md:gap-2 mt-4">
                   {getStepStatus(selectedSubmission).map((step, i) => (
-                    <span key={i} className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm">
-                      ✓ {step}
+                    <span key={i} className="bg-green-500/20 text-green-400 px-2 md:px-3 py-1 rounded-full text-xs md:text-sm">
+                      ✓ <span className="hidden sm:inline">{step}</span>
                     </span>
                   ))}
                 </div>
