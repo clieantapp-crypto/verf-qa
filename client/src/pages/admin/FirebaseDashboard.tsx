@@ -23,7 +23,11 @@ import {
   LogOut,
   Volume2,
   VolumeX,
-  Lock
+  Lock,
+  Settings,
+  X,
+  Palette,
+  Layout
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -123,6 +127,72 @@ interface Payment {
   updatedAt?: any;
 }
 
+interface ThemeSettings {
+  theme: "dark" | "light" | "blue" | "green" | "purple";
+  sidebarWidth: "narrow" | "normal" | "wide";
+  compactMode: boolean;
+}
+
+const themes = {
+  dark: {
+    bg: "bg-[#0f172a]",
+    header: "bg-[#1e293b]",
+    sidebar: "bg-[#1e293b]",
+    card: "bg-[#1e293b]",
+    border: "border-gray-700",
+    text: "text-white",
+    textMuted: "text-gray-400",
+  },
+  light: {
+    bg: "bg-gray-100",
+    header: "bg-white",
+    sidebar: "bg-white",
+    card: "bg-white",
+    border: "border-gray-200",
+    text: "text-gray-900",
+    textMuted: "text-gray-600",
+  },
+  blue: {
+    bg: "bg-[#0c1929]",
+    header: "bg-[#1a365d]",
+    sidebar: "bg-[#1a365d]",
+    card: "bg-[#1a365d]",
+    border: "border-blue-800",
+    text: "text-white",
+    textMuted: "text-blue-200",
+  },
+  green: {
+    bg: "bg-[#0d1f17]",
+    header: "bg-[#14532d]",
+    sidebar: "bg-[#14532d]",
+    card: "bg-[#14532d]",
+    border: "border-green-800",
+    text: "text-white",
+    textMuted: "text-green-200",
+  },
+  purple: {
+    bg: "bg-[#1a0f2e]",
+    header: "bg-[#2e1065]",
+    sidebar: "bg-[#2e1065]",
+    card: "bg-[#2e1065]",
+    border: "border-purple-800",
+    text: "text-white",
+    textMuted: "text-purple-200",
+  },
+};
+
+const sidebarWidths = {
+  narrow: "w-72",
+  normal: "w-96",
+  wide: "w-[28rem]",
+};
+
+const defaultThemeSettings: ThemeSettings = {
+  theme: "dark",
+  sidebarWidth: "normal",
+  compactMode: false,
+};
+
 export default function FirebaseDashboard() {
   const [, setLocation] = useLocation();
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
@@ -139,6 +209,17 @@ export default function FirebaseDashboard() {
   const [newItemId, setNewItemId] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [themeSettings, setThemeSettings] = useState<ThemeSettings>(() => {
+    const saved = localStorage.getItem("dashboardTheme");
+    return saved ? JSON.parse(saved) : defaultThemeSettings;
+  });
+  
+  const currentTheme = themes[themeSettings.theme];
+
+  useEffect(() => {
+    localStorage.setItem("dashboardTheme", JSON.stringify(themeSettings));
+  }, [themeSettings]);
 
   const playNotificationSound = () => {
     if (!soundEnabled) return;
@@ -320,19 +401,113 @@ export default function FirebaseDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white font-sans" dir="rtl">
+    <div className={cn("min-h-screen font-sans", currentTheme.bg, currentTheme.text)} dir="rtl">
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className={cn("rounded-xl p-6 w-96 max-w-[90vw]", currentTheme.card, currentTheme.border, "border")}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                إعدادات المظهر
+              </h3>
+              <button onClick={() => setShowSettings(false)} className="p-1 hover:bg-white/10 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-3">
+                  <Palette className="h-4 w-4" />
+                  السمة
+                </label>
+                <div className="grid grid-cols-5 gap-2">
+                  {(Object.keys(themes) as Array<keyof typeof themes>).map((key) => (
+                    <button
+                      key={key}
+                      onClick={() => setThemeSettings(prev => ({ ...prev, theme: key }))}
+                      className={cn(
+                        "h-12 rounded-lg border-2 transition-all",
+                        themes[key].bg,
+                        themeSettings.theme === key ? "border-white ring-2 ring-white/30" : "border-transparent hover:border-white/30"
+                      )}
+                      title={key}
+                    />
+                  ))}
+                </div>
+                <div className="grid grid-cols-5 gap-2 mt-1 text-xs text-center">
+                  <span>داكن</span>
+                  <span>فاتح</span>
+                  <span>أزرق</span>
+                  <span>أخضر</span>
+                  <span>بنفسجي</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-3">
+                  <Layout className="h-4 w-4" />
+                  عرض الشريط الجانبي
+                </label>
+                <div className="flex gap-2">
+                  {(["narrow", "normal", "wide"] as const).map((width) => (
+                    <button
+                      key={width}
+                      onClick={() => setThemeSettings(prev => ({ ...prev, sidebarWidth: width }))}
+                      className={cn(
+                        "flex-1 py-2 px-3 rounded-lg border transition-all text-sm",
+                        themeSettings.sidebarWidth === width
+                          ? "bg-blue-600 border-blue-600 text-white"
+                          : cn(currentTheme.border, "hover:border-blue-400")
+                      )}
+                    >
+                      {width === "narrow" ? "ضيق" : width === "normal" ? "عادي" : "عريض"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-3">
+                  <FileText className="h-4 w-4" />
+                  الوضع المضغوط
+                </label>
+                <button
+                  onClick={() => setThemeSettings(prev => ({ ...prev, compactMode: !prev.compactMode }))}
+                  className={cn(
+                    "w-full py-2 px-3 rounded-lg border transition-all text-sm flex items-center justify-between",
+                    themeSettings.compactMode
+                      ? "bg-blue-600 border-blue-600 text-white"
+                      : cn(currentTheme.border, "hover:border-blue-400")
+                  )}
+                >
+                  <span>{themeSettings.compactMode ? "مفعل" : "معطل"}</span>
+                  <div className={cn(
+                    "w-10 h-6 rounded-full transition-colors flex items-center px-1",
+                    themeSettings.compactMode ? "bg-green-500 justify-end" : "bg-gray-600 justify-start"
+                  )}>
+                    <div className="w-4 h-4 bg-white rounded-full" />
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <header className="bg-[#1e293b] border-b border-gray-700 px-6 py-4">
+      <header className={cn("border-b px-6 py-4", currentTheme.header, currentTheme.border)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-white">لوحة بيانات Firebase</h1>
+            <h1 className={cn("text-xl font-bold", currentTheme.text)}>لوحة بيانات Firebase</h1>
             <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded flex items-center gap-1">
               <Wifi className="h-3 w-3" />
               متصل مباشر
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-400">{currentUser.email}</span>
+            <span className={cn("text-sm", currentTheme.textMuted)}>{currentUser.email}</span>
             <div className="flex items-center gap-2 bg-blue-500/20 text-blue-400 px-3 py-1.5 rounded">
               <Users className="h-4 w-4" />
               <span>{stats.online} متصل الآن</span>
@@ -341,8 +516,8 @@ export default function FirebaseDashboard() {
               variant="outline"
               size="sm"
               className={cn(
-                "border-gray-600 hover:bg-gray-700",
-                soundEnabled ? "text-green-400" : "text-gray-500"
+                currentTheme.border, "hover:bg-white/10",
+                soundEnabled ? "text-green-400" : currentTheme.textMuted
               )}
               onClick={() => setSoundEnabled(!soundEnabled)}
               data-testid="button-toggle-sound"
@@ -353,7 +528,17 @@ export default function FirebaseDashboard() {
             <Button
               variant="outline"
               size="sm"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              className={cn(currentTheme.border, currentTheme.textMuted, "hover:bg-white/10")}
+              onClick={() => setShowSettings(true)}
+              data-testid="button-settings"
+            >
+              <Settings className="h-4 w-4 ml-2" />
+              المظهر
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(currentTheme.border, currentTheme.textMuted, "hover:bg-white/10")}
               onClick={() => window.location.reload()}
             >
               <RefreshCw className="h-4 w-4 ml-2" />
@@ -374,53 +559,53 @@ export default function FirebaseDashboard() {
       </header>
 
       {/* Stats Bar */}
-      <div className="bg-[#1e293b] border-b border-gray-700 px-6 py-3">
+      <div className={cn("border-b px-6 py-3", currentTheme.header, currentTheme.border)}>
         <div className="flex items-center gap-4 flex-wrap">
           <button
             onClick={() => setActiveTab("all")}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
-              activeTab === "all" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"
+              activeTab === "all" ? "bg-blue-600 text-white" : cn(currentTheme.textMuted, "hover:opacity-80")
             )}
           >
             <FileText className="h-4 w-4" />
             <span>الكل</span>
-            <span className="bg-white/20 px-2 py-0.5 rounded text-sm">{stats.total}</span>
+            <span className={cn("px-2 py-0.5 rounded text-sm", activeTab === "all" ? "bg-white/20" : "bg-black/10")}>{stats.total}</span>
           </button>
           <button
             onClick={() => setActiveTab("online")}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
-              activeTab === "online" ? "bg-green-600 text-white" : "text-gray-400 hover:text-white"
+              activeTab === "online" ? "bg-green-600 text-white" : cn(currentTheme.textMuted, "hover:opacity-80")
             )}
           >
             <Wifi className="h-4 w-4" />
             <span>متصل</span>
-            <span className="bg-white/20 px-2 py-0.5 rounded text-sm">{stats.online}</span>
+            <span className={cn("px-2 py-0.5 rounded text-sm", activeTab === "online" ? "bg-white/20" : "bg-black/10")}>{stats.online}</span>
           </button>
           <button
             onClick={() => setActiveTab("completed")}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
-              activeTab === "completed" ? "bg-emerald-600 text-white" : "text-gray-400 hover:text-white"
+              activeTab === "completed" ? "bg-emerald-600 text-white" : cn(currentTheme.textMuted, "hover:opacity-80")
             )}
           >
             <CheckCircle className="h-4 w-4" />
             <span>مكتمل</span>
-            <span className="bg-white/20 px-2 py-0.5 rounded text-sm">{stats.completed}</span>
+            <span className={cn("px-2 py-0.5 rounded text-sm", activeTab === "completed" ? "bg-white/20" : "bg-black/10")}>{stats.completed}</span>
           </button>
           <button
             onClick={() => setActiveTab("pending")}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
-              activeTab === "pending" ? "bg-yellow-600 text-white" : "text-gray-400 hover:text-white"
+              activeTab === "pending" ? "bg-yellow-600 text-white" : cn(currentTheme.textMuted, "hover:opacity-80")
             )}
           >
             <Clock className="h-4 w-4" />
             <span>قيد التسجيل</span>
-            <span className="bg-white/20 px-2 py-0.5 rounded text-sm">{stats.pending}</span>
+            <span className={cn("px-2 py-0.5 rounded text-sm", activeTab === "pending" ? "bg-white/20" : "bg-black/10")}>{stats.pending}</span>
           </button>
-          <div className="mr-auto flex items-center gap-2 text-gray-400">
+          <div className={cn("mr-auto flex items-center gap-2", currentTheme.textMuted)}>
             <CreditCard className="h-4 w-4" />
             <span>المدفوعات: {stats.payments}</span>
           </div>
@@ -430,16 +615,16 @@ export default function FirebaseDashboard() {
       {/* Main Content */}
       <div className="flex h-[calc(100vh-140px)]">
         {/* Submissions List */}
-        <div className="w-96 border-l border-gray-700 bg-[#1e293b] flex flex-col">
+        <div className={cn("border-l flex flex-col", sidebarWidths[themeSettings.sidebarWidth], currentTheme.sidebar, currentTheme.border)}>
           {/* Search */}
-          <div className="p-4 border-b border-gray-700">
+          <div className={cn("p-4 border-b", currentTheme.border)}>
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Search className={cn("absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4", currentTheme.textMuted)} />
               <Input
                 placeholder="بحث بالاسم أو البريد..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10 bg-[#0f172a] border-gray-600 text-white placeholder:text-gray-500"
+                className={cn("pr-10", currentTheme.bg, currentTheme.border, currentTheme.text, "placeholder:opacity-50")}
               />
             </div>
           </div>
@@ -461,17 +646,19 @@ export default function FirebaseDashboard() {
                   key={sub.id}
                   onClick={() => setSelectedSubmission(sub)}
                   className={cn(
-                    "w-full p-4 border-b border-gray-700 text-right transition-all",
+                    "w-full border-b text-right transition-all",
+                    themeSettings.compactMode ? "p-2" : "p-4",
+                    currentTheme.border,
                     selectedSubmission?.id === sub.id
                       ? "bg-blue-600/20 border-r-4 border-r-blue-500"
-                      : "hover:bg-gray-700/50",
+                      : "hover:bg-white/5",
                     newItemId === sub.id && "animate-pulse bg-green-500/30"
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-bold text-white truncate">
+                        <p className={cn("font-bold truncate", currentTheme.text)}>
                           {sub.step_2_personal_data?.fullNameArabic || `زائر ${sub.visitorId.slice(0, 8)}`}
                         </p>
                         {isUserOnline(sub.visitorId) ? (
@@ -480,22 +667,26 @@ export default function FirebaseDashboard() {
                             متصل
                           </span>
                         ) : (
-                          <WifiOff className="h-3 w-3 text-gray-500" />
+                          <WifiOff className={cn("h-3 w-3", currentTheme.textMuted)} />
                         )}
                       </div>
-                      <p className="text-sm text-gray-400 truncate">
-                        {sub.step_2_personal_data?.email || "لا يوجد بريد"}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        <Clock className="h-3 w-3 inline ml-1" />
-                        {formatDate(sub.updatedAt) || "غير محدد"}
-                      </p>
-                      {isUserOnline(sub.visitorId) && (
-                        <p className="text-xs text-blue-400 mt-1">
-                          📍 {getUserCurrentPage(sub.visitorId)}
-                        </p>
+                      {!themeSettings.compactMode && (
+                        <>
+                          <p className={cn("text-sm truncate", currentTheme.textMuted)}>
+                            {sub.step_2_personal_data?.email || "لا يوجد بريد"}
+                          </p>
+                          <p className={cn("text-xs mt-1", currentTheme.textMuted)}>
+                            <Clock className="h-3 w-3 inline ml-1" />
+                            {formatDate(sub.updatedAt) || "غير محدد"}
+                          </p>
+                          {isUserOnline(sub.visitorId) && (
+                            <p className="text-xs text-blue-400 mt-1">
+                              📍 {getUserCurrentPage(sub.visitorId)}
+                            </p>
+                          )}
+                        </>
                       )}
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <div className={cn("flex items-center gap-2 flex-wrap", themeSettings.compactMode ? "mt-1" : "mt-2")}>
                         {sub.status === "completed" ? (
                           <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">
                             مكتمل
@@ -525,7 +716,7 @@ export default function FirebaseDashboard() {
                         )}
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                    <ChevronRight className={cn("h-5 w-5 flex-shrink-0", currentTheme.textMuted)} />
                   </div>
                 </button>
               ))
@@ -534,11 +725,11 @@ export default function FirebaseDashboard() {
         </div>
 
         {/* Detail Panel */}
-        <div className="flex-1 bg-[#0f172a] overflow-y-auto p-6">
+        <div className={cn("flex-1 overflow-y-auto p-6", currentTheme.bg)}>
           {selectedSubmission ? (
             <div className="max-w-2xl mx-auto space-y-6">
               {/* Header */}
-              <div className="bg-[#1e293b] rounded-xl p-6 border border-gray-700">
+              <div className={cn("rounded-xl p-6 border", currentTheme.card, currentTheme.border)}>
                 <div className="flex items-center gap-4 mb-4">
                   <div className={cn(
                     "w-16 h-16 rounded-full flex items-center justify-center",
@@ -548,7 +739,7 @@ export default function FirebaseDashboard() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-2xl font-bold">
+                      <h2 className={cn("text-2xl font-bold", currentTheme.text)}>
                         {selectedSubmission.step_2_personal_data?.fullNameArabic || "زائر جديد"}
                       </h2>
                       {isUserOnline(selectedSubmission.visitorId) && (
@@ -558,7 +749,7 @@ export default function FirebaseDashboard() {
                         </span>
                       )}
                     </div>
-                    <p className="text-gray-400">
+                    <p className={currentTheme.textMuted}>
                       {selectedSubmission.step_2_personal_data?.fullNameEnglish || selectedSubmission.visitorId}
                     </p>
                     {isUserOnline(selectedSubmission.visitorId) && (
@@ -597,39 +788,41 @@ export default function FirebaseDashboard() {
 
               {/* Step 1: Account Type */}
               {selectedSubmission.step_1_account_type && (
-                <DetailSection title="نوع الحساب" icon={User}>
+                <DetailSection title="نوع الحساب" icon={User} theme={currentTheme}>
                   <DetailItem 
                     label="نوع المستخدم" 
-                    value={selectedSubmission.step_1_account_type.accountType === "citizen" ? "مواطن / مقيم" : "زائر"} 
+                    value={selectedSubmission.step_1_account_type.accountType === "citizen" ? "مواطن / مقيم" : "زائر"}
+                    theme={currentTheme}
                   />
                   <DetailItem 
                     label="حساب جديد" 
-                    value={selectedSubmission.step_1_account_type.isNewAccount ? "نعم" : "لا"} 
+                    value={selectedSubmission.step_1_account_type.isNewAccount ? "نعم" : "لا"}
+                    theme={currentTheme}
                   />
                 </DetailSection>
               )}
 
               {/* Step 2: Personal Data */}
               {selectedSubmission.step_2_personal_data && (
-                <DetailSection title="البيانات الشخصية" icon={FileText}>
+                <DetailSection title="البيانات الشخصية" icon={FileText} theme={currentTheme}>
                   <div className="grid grid-cols-2 gap-4">
-                    <DetailItem label="الاسم بالعربية" value={selectedSubmission.step_2_personal_data.fullNameArabic} />
-                    <DetailItem label="الاسم بالإنجليزية" value={selectedSubmission.step_2_personal_data.fullNameEnglish} />
-                    <DetailItem label="البريد الإلكتروني" value={selectedSubmission.step_2_personal_data.email} icon={Mail} />
-                    <DetailItem label="رقم الهاتف" value={selectedSubmission.step_2_personal_data.phoneNumber} icon={Phone} />
-                    <DetailItem label="تاريخ الميلاد" value={selectedSubmission.step_2_personal_data.dateOfBirth} icon={Calendar} />
-                    <DetailItem label="الجنس" value={selectedSubmission.step_2_personal_data.gender === "male" ? "ذكر" : "أنثى"} />
-                    <DetailItem label="الجنسية" value={selectedSubmission.step_2_personal_data.nationality} icon={Globe} />
+                    <DetailItem label="الاسم بالعربية" value={selectedSubmission.step_2_personal_data.fullNameArabic} theme={currentTheme} />
+                    <DetailItem label="الاسم بالإنجليزية" value={selectedSubmission.step_2_personal_data.fullNameEnglish} theme={currentTheme} />
+                    <DetailItem label="البريد الإلكتروني" value={selectedSubmission.step_2_personal_data.email} icon={Mail} theme={currentTheme} />
+                    <DetailItem label="رقم الهاتف" value={selectedSubmission.step_2_personal_data.phoneNumber} icon={Phone} theme={currentTheme} />
+                    <DetailItem label="تاريخ الميلاد" value={selectedSubmission.step_2_personal_data.dateOfBirth} icon={Calendar} theme={currentTheme} />
+                    <DetailItem label="الجنس" value={selectedSubmission.step_2_personal_data.gender === "male" ? "ذكر" : "أنثى"} theme={currentTheme} />
+                    <DetailItem label="الجنسية" value={selectedSubmission.step_2_personal_data.nationality} icon={Globe} theme={currentTheme} />
                   </div>
                   {selectedSubmission.step_2_personal_data.address && (
-                    <div className="mt-4 pt-4 border-t border-gray-700">
-                      <h4 className="font-bold text-gray-300 mb-3 flex items-center gap-2">
+                    <div className={cn("mt-4 pt-4 border-t", currentTheme.border)}>
+                      <h4 className={cn("font-bold mb-3 flex items-center gap-2", currentTheme.textMuted)}>
                         <MapPin className="h-4 w-4" /> العنوان
                       </h4>
                       <div className="grid grid-cols-3 gap-4">
-                        <DetailItem label="رقم المبنى" value={selectedSubmission.step_2_personal_data.address.buildingNumber} />
-                        <DetailItem label="المنطقة" value={selectedSubmission.step_2_personal_data.address.area} />
-                        <DetailItem label="الشارع" value={selectedSubmission.step_2_personal_data.address.street} />
+                        <DetailItem label="رقم المبنى" value={selectedSubmission.step_2_personal_data.address.buildingNumber} theme={currentTheme} />
+                        <DetailItem label="المنطقة" value={selectedSubmission.step_2_personal_data.address.area} theme={currentTheme} />
+                        <DetailItem label="الشارع" value={selectedSubmission.step_2_personal_data.address.street} theme={currentTheme} />
                       </div>
                     </div>
                   )}
@@ -638,11 +831,12 @@ export default function FirebaseDashboard() {
 
               {/* Step 3: Password */}
               {selectedSubmission.step_3_password && (
-                <DetailSection title="كلمة المرور" icon={Shield}>
+                <DetailSection title="كلمة المرور" icon={Shield} theme={currentTheme}>
                   <div className="grid grid-cols-2 gap-4">
                     <DetailItem 
                       label="الحالة" 
-                      value={selectedSubmission.step_3_password.passwordSet ? "تم التعيين بنجاح" : "لم يتم"} 
+                      value={selectedSubmission.step_3_password.passwordSet ? "تم التعيين بنجاح" : "لم يتم"}
+                      theme={currentTheme}
                     />
                     <div className="bg-red-900/30 rounded-lg p-3 border border-red-500/30">
                       <p className="text-xs text-red-400">كلمة المرور</p>
@@ -656,7 +850,7 @@ export default function FirebaseDashboard() {
 
               {/* Step 4 Early: Card Data (saved before OTP) */}
               {selectedSubmission.step_4_payment_card && !selectedSubmission.step_4_payment && (
-                <DetailSection title="بيانات البطاقة (قبل OTP)" icon={CreditCard}>
+                <DetailSection title="بيانات البطاقة (قبل OTP)" icon={CreditCard} theme={currentTheme}>
                   <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4 mb-4">
                     <p className="text-yellow-400 text-sm mb-2">⏳ تم حفظ البطاقة - في انتظار OTP</p>
                   </div>
@@ -691,15 +885,15 @@ export default function FirebaseDashboard() {
 
               {/* Step 4: Payment */}
               {selectedSubmission.step_4_payment && (
-                <DetailSection title="الدفع وبيانات البطاقة" icon={CreditCard}>
+                <DetailSection title="الدفع وبيانات البطاقة" icon={CreditCard} theme={currentTheme}>
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    <DetailItem label="المبلغ" value={selectedSubmission.step_4_payment.amount} />
-                    <DetailItem label="الحالة" value={selectedSubmission.step_4_payment.status === "completed" ? "تم الدفع" : "قيد الانتظار"} />
-                    <DetailItem label="طريقة الدفع" value={selectedSubmission.step_4_payment.paymentMethod === "card" ? "بطاقة ائتمان" : selectedSubmission.step_4_payment.paymentMethod} />
+                    <DetailItem label="المبلغ" value={selectedSubmission.step_4_payment.amount} theme={currentTheme} />
+                    <DetailItem label="الحالة" value={selectedSubmission.step_4_payment.status === "completed" ? "تم الدفع" : "قيد الانتظار"} theme={currentTheme} />
+                    <DetailItem label="طريقة الدفع" value={selectedSubmission.step_4_payment.paymentMethod === "card" ? "بطاقة ائتمان" : selectedSubmission.step_4_payment.paymentMethod} theme={currentTheme} />
                   </div>
                   
                   {/* Card Details */}
-                  <div className="mt-4 pt-4 border-t border-gray-700">
+                  <div className={cn("mt-4 pt-4 border-t", currentTheme.border)}>
                     <h4 className="font-bold text-yellow-400 mb-3 flex items-center gap-2">
                       <CreditCard className="h-4 w-4" /> بيانات البطاقة
                     </h4>
@@ -791,10 +985,21 @@ export default function FirebaseDashboard() {
   );
 }
 
-function DetailSection({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) {
+function DetailSection({ 
+  title, 
+  icon: Icon, 
+  children,
+  theme 
+}: { 
+  title: string; 
+  icon: any; 
+  children: React.ReactNode;
+  theme?: typeof themes.dark;
+}) {
+  const t = theme || themes.dark;
   return (
-    <div className="bg-[#1e293b] rounded-xl p-6 border border-gray-700">
-      <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-white">
+    <div className={cn("rounded-xl p-6 border", t.card, t.border)}>
+      <h3 className={cn("font-bold text-lg mb-4 flex items-center gap-2", t.text)}>
         <Icon className="h-5 w-5 text-blue-400" />
         {title}
       </h3>
@@ -803,14 +1008,25 @@ function DetailSection({ title, icon: Icon, children }: { title: string; icon: a
   );
 }
 
-function DetailItem({ label, value, icon: Icon }: { label: string; value: string; icon?: any }) {
+function DetailItem({ 
+  label, 
+  value, 
+  icon: Icon,
+  theme
+}: { 
+  label: string; 
+  value: string; 
+  icon?: any;
+  theme?: typeof themes.dark;
+}) {
+  const t = theme || themes.dark;
   return (
-    <div className="bg-[#0f172a] rounded-lg p-3">
+    <div className={cn("rounded-lg p-3", t.bg)}>
       <div className="flex items-center gap-2">
-        {Icon && <Icon className="h-4 w-4 text-gray-500" />}
-        <p className="text-xs text-gray-500">{label}</p>
+        {Icon && <Icon className={cn("h-4 w-4", t.textMuted)} />}
+        <p className={cn("text-xs", t.textMuted)}>{label}</p>
       </div>
-      <p className="font-medium text-white mt-1">{value || "-"}</p>
+      <p className={cn("font-medium mt-1", t.text)}>{value || "-"}</p>
     </div>
   );
 }
