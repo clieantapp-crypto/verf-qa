@@ -1,6 +1,6 @@
 import type { Express, Request } from "express";
 import { type Server } from "http";
-import { storage } from "./storage";
+import { storage } from "./firebaseStorage";
 import { insertUserSchema, insertApplicationSchema, insertVisitorSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
