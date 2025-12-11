@@ -13,7 +13,7 @@ import { Phone, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Step6PhoneProviderProps {
-  onNext: () => void;
+  onNext: (providerData?: { provider: string; number: string }) => void;
   onBack: () => void;
 }
 
@@ -58,7 +58,7 @@ export function Step6PhoneProvider({ onNext, onBack }: Step6PhoneProviderProps) 
         title: "تم الحفظ بنجاح",
         description: "تم حفظ بيانات مزود الخدمة بنجاح",
       });
-      onNext();
+      onNext({ provider, number: phoneNumber });
       setIsLoading(false);
     }, 1500);
   };

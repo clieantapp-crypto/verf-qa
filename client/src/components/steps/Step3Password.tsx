@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check } from "lucide-react";
 
-export function Step3Password({ onNext, onBack }: { onNext: () => void, onBack: () => void }) {
+export function Step3Password({ onNext, onBack }: { onNext: (password?: string) => void, onBack: () => void }) {
   return (
     <div className="p-6 md:p-8">
       <h2 className="text-xl font-bold text-right mb-6 pb-2 border-b border-gray-300">
@@ -57,7 +57,7 @@ export function Step3Password({ onNext, onBack }: { onNext: () => void, onBack: 
         </div>
 
         <div className="flex gap-4 pt-8">
-          <Button onClick={onNext} type="button" className="flex-1 bg-[#1e60a6] hover:bg-[#164e8a] text-white h-12 text-lg">
+          <Button onClick={() => onNext("password_set")} type="button" className="flex-1 bg-[#1e60a6] hover:bg-[#164e8a] text-white h-12 text-lg">
             استمر
           </Button>
           <Button onClick={onBack} type="button" variant="outline" className="flex-1 bg-[#eee] border-gray-300 hover:bg-gray-200 text-gray-700 h-12 text-lg">

