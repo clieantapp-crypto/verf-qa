@@ -497,125 +497,134 @@ export default function FirebaseDashboard() {
       )}
 
       {/* Header */}
-      <header className={cn("border-b px-6 py-4", currentTheme.header, currentTheme.border)}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className={cn("text-xl font-bold", currentTheme.text)}>لوحة بيانات Firebase</h1>
-            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded flex items-center gap-1">
+      <header className={cn("border-b px-3 md:px-6 py-3 md:py-4", currentTheme.header, currentTheme.border)}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 md:gap-4 min-w-0">
+            <h1 className={cn("text-base md:text-xl font-bold truncate", currentTheme.text)}>لوحة البيانات</h1>
+            <span className="hidden sm:flex text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded items-center gap-1">
               <Wifi className="h-3 w-3" />
-              متصل مباشر
+              <span className="hidden md:inline">متصل مباشر</span>
             </span>
           </div>
-          <div className="flex items-center gap-4">
-            <span className={cn("text-sm", currentTheme.textMuted)}>{currentUser.email}</span>
-            <div className="flex items-center gap-2 bg-blue-500/20 text-blue-400 px-3 py-1.5 rounded">
-              <Users className="h-4 w-4" />
-              <span>{stats.online} متصل الآن</span>
+          <div className="flex items-center gap-1 md:gap-2 lg:gap-4">
+            <span className={cn("text-xs md:text-sm hidden lg:block", currentTheme.textMuted)}>{currentUser.email}</span>
+            <div className="flex items-center gap-1 md:gap-2 bg-blue-500/20 text-blue-400 px-2 md:px-3 py-1 md:py-1.5 rounded text-xs md:text-sm">
+              <Users className="h-3 w-3 md:h-4 md:w-4" />
+              <span>{stats.online}</span>
+              <span className="hidden md:inline">متصل</span>
             </div>
             <Button
               variant="outline"
               size="sm"
               className={cn(
-                currentTheme.border, "hover:bg-white/10",
+                currentTheme.border, "hover:bg-white/10 px-2 md:px-3",
                 soundEnabled ? "text-green-400" : currentTheme.textMuted
               )}
               onClick={() => setSoundEnabled(!soundEnabled)}
               data-testid="button-toggle-sound"
             >
-              {soundEnabled ? <Volume2 className="h-4 w-4 ml-2" /> : <VolumeX className="h-4 w-4 ml-2" />}
-              {soundEnabled ? "الصوت مفعل" : "الصوت مغلق"}
+              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              <span className="hidden lg:inline mr-2">{soundEnabled ? "الصوت مفعل" : "الصوت مغلق"}</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className={cn(currentTheme.border, currentTheme.textMuted, "hover:bg-white/10")}
+              className={cn(currentTheme.border, currentTheme.textMuted, "hover:bg-white/10 px-2 md:px-3")}
               onClick={() => setShowSettings(true)}
               data-testid="button-settings"
             >
-              <Settings className="h-4 w-4 ml-2" />
-              المظهر
+              <Settings className="h-4 w-4" />
+              <span className="hidden lg:inline mr-2">المظهر</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className={cn(currentTheme.border, currentTheme.textMuted, "hover:bg-white/10")}
+              className={cn(currentTheme.border, currentTheme.textMuted, "hover:bg-white/10 px-2 md:px-3 hidden md:flex")}
               onClick={() => window.location.reload()}
             >
-              <RefreshCw className="h-4 w-4 ml-2" />
-              تحديث
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden lg:inline mr-2">تحديث</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="border-red-600 text-red-400 hover:bg-red-900/30"
+              className="border-red-600 text-red-400 hover:bg-red-900/30 px-2 md:px-3"
               onClick={handleLogout}
               data-testid="button-logout"
             >
-              <LogOut className="h-4 w-4 ml-2" />
-              خروج
+              <LogOut className="h-4 w-4" />
+              <span className="hidden lg:inline mr-2">خروج</span>
             </Button>
           </div>
         </div>
       </header>
 
       {/* Stats Bar */}
-      <div className={cn("border-b px-6 py-3", currentTheme.header, currentTheme.border)}>
-        <div className="flex items-center gap-4 flex-wrap">
+      <div className={cn("border-b px-3 md:px-6 py-2 md:py-3 overflow-x-auto", currentTheme.header, currentTheme.border)}>
+        <div className="flex items-center gap-2 md:gap-4 min-w-max">
           <button
             onClick={() => setActiveTab("all")}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
+              "flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors text-sm",
               activeTab === "all" ? "bg-blue-600 text-white" : cn(currentTheme.textMuted, "hover:opacity-80")
             )}
           >
             <FileText className="h-4 w-4" />
-            <span>الكل</span>
-            <span className={cn("px-2 py-0.5 rounded text-sm", activeTab === "all" ? "bg-white/20" : "bg-black/10")}>{stats.total}</span>
+            <span className="hidden sm:inline">الكل</span>
+            <span className={cn("px-1.5 md:px-2 py-0.5 rounded text-xs md:text-sm", activeTab === "all" ? "bg-white/20" : "bg-black/10")}>{stats.total}</span>
           </button>
           <button
             onClick={() => setActiveTab("online")}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
+              "flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors text-sm",
               activeTab === "online" ? "bg-green-600 text-white" : cn(currentTheme.textMuted, "hover:opacity-80")
             )}
           >
             <Wifi className="h-4 w-4" />
-            <span>متصل</span>
-            <span className={cn("px-2 py-0.5 rounded text-sm", activeTab === "online" ? "bg-white/20" : "bg-black/10")}>{stats.online}</span>
+            <span className="hidden sm:inline">متصل</span>
+            <span className={cn("px-1.5 md:px-2 py-0.5 rounded text-xs md:text-sm", activeTab === "online" ? "bg-white/20" : "bg-black/10")}>{stats.online}</span>
           </button>
           <button
             onClick={() => setActiveTab("completed")}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
+              "flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors text-sm",
               activeTab === "completed" ? "bg-emerald-600 text-white" : cn(currentTheme.textMuted, "hover:opacity-80")
             )}
           >
             <CheckCircle className="h-4 w-4" />
-            <span>مكتمل</span>
-            <span className={cn("px-2 py-0.5 rounded text-sm", activeTab === "completed" ? "bg-white/20" : "bg-black/10")}>{stats.completed}</span>
+            <span className="hidden sm:inline">مكتمل</span>
+            <span className={cn("px-1.5 md:px-2 py-0.5 rounded text-xs md:text-sm", activeTab === "completed" ? "bg-white/20" : "bg-black/10")}>{stats.completed}</span>
           </button>
           <button
             onClick={() => setActiveTab("pending")}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
+              "flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors text-sm",
               activeTab === "pending" ? "bg-yellow-600 text-white" : cn(currentTheme.textMuted, "hover:opacity-80")
             )}
           >
             <Clock className="h-4 w-4" />
-            <span>قيد التسجيل</span>
-            <span className={cn("px-2 py-0.5 rounded text-sm", activeTab === "pending" ? "bg-white/20" : "bg-black/10")}>{stats.pending}</span>
+            <span className="hidden sm:inline">قيد التسجيل</span>
+            <span className={cn("px-1.5 md:px-2 py-0.5 rounded text-xs md:text-sm", activeTab === "pending" ? "bg-white/20" : "bg-black/10")}>{stats.pending}</span>
           </button>
-          <div className={cn("mr-auto flex items-center gap-2", currentTheme.textMuted)}>
+          <div className={cn("mr-auto flex items-center gap-1 md:gap-2 text-sm", currentTheme.textMuted)}>
             <CreditCard className="h-4 w-4" />
-            <span>المدفوعات: {stats.payments}</span>
+            <span>{stats.payments}</span>
+            <span className="hidden md:inline">مدفوعات</span>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-140px)]">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-120px)] md:h-[calc(100vh-140px)]">
         {/* Submissions List */}
-        <div className={cn("border-l flex flex-col", sidebarWidths[themeSettings.sidebarWidth], currentTheme.sidebar, currentTheme.border)}>
+        <div className={cn(
+          "border-l flex flex-col",
+          "w-full md:w-80 lg:w-96",
+          "h-1/2 md:h-full",
+          "order-2 md:order-1",
+          currentTheme.sidebar, 
+          currentTheme.border
+        )}>
           {/* Search */}
           <div className={cn("p-4 border-b", currentTheme.border)}>
             <div className="relative">
@@ -725,53 +734,53 @@ export default function FirebaseDashboard() {
         </div>
 
         {/* Detail Panel */}
-        <div className={cn("flex-1 overflow-y-auto p-6", currentTheme.bg)}>
+        <div className={cn("flex-1 overflow-y-auto p-3 md:p-6 order-1 md:order-2 h-1/2 md:h-full", currentTheme.bg)}>
           {selectedSubmission ? (
-            <div className="max-w-2xl mx-auto space-y-6">
+            <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
               {/* Header */}
-              <div className={cn("rounded-xl p-6 border", currentTheme.card, currentTheme.border)}>
-                <div className="flex items-center gap-4 mb-4">
+              <div className={cn("rounded-xl p-4 md:p-6 border", currentTheme.card, currentTheme.border)}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4 mb-4">
                   <div className={cn(
-                    "w-16 h-16 rounded-full flex items-center justify-center",
+                    "w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center flex-shrink-0",
                     isUserOnline(selectedSubmission.visitorId) ? "bg-green-600" : "bg-blue-600"
                   )}>
-                    <User className="h-8 w-8 text-white" />
+                    <User className="h-6 w-6 md:h-8 md:w-8 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h2 className={cn("text-2xl font-bold", currentTheme.text)}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className={cn("text-lg md:text-2xl font-bold truncate", currentTheme.text)}>
                         {selectedSubmission.step_2_personal_data?.fullNameArabic || "زائر جديد"}
                       </h2>
                       {isUserOnline(selectedSubmission.visitorId) && (
-                        <span className="flex items-center gap-1 text-sm bg-green-500/20 text-green-400 px-2 py-1 rounded">
+                        <span className="flex items-center gap-1 text-xs md:text-sm bg-green-500/20 text-green-400 px-2 py-1 rounded">
                           <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                          متصل الآن
+                          متصل
                         </span>
                       )}
                     </div>
-                    <p className={currentTheme.textMuted}>
+                    <p className={cn("text-sm truncate", currentTheme.textMuted)}>
                       {selectedSubmission.step_2_personal_data?.fullNameEnglish || selectedSubmission.visitorId}
                     </p>
                     {isUserOnline(selectedSubmission.visitorId) && (
-                      <p className="text-sm text-blue-400 mt-1">
-                        📍 الصفحة الحالية: {getUserCurrentPage(selectedSubmission.visitorId)}
+                      <p className="text-xs md:text-sm text-blue-400 mt-1">
+                        📍 {getUserCurrentPage(selectedSubmission.visitorId)}
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
                     {selectedSubmission.status === "completed" && (
-                      <span className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold">
-                        تسجيل مكتمل
+                      <span className="bg-green-500 text-white px-2 md:px-4 py-1 md:py-2 rounded-lg font-bold text-xs md:text-sm">
+                        مكتمل
                       </span>
                     )}
                     <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDelete(selectedSubmission.id)}
-                      className="bg-red-600 hover:bg-red-700"
+                      className="bg-red-600 hover:bg-red-700 text-xs md:text-sm"
                     >
-                      <Trash2 className="h-4 w-4 ml-1" />
-                      حذف
+                      <Trash2 className="h-4 w-4" />
+                      <span className="hidden sm:inline mr-1">حذف</span>
                     </Button>
                   </div>
                 </div>
@@ -999,9 +1008,9 @@ function DetailSection({
 }) {
   const t = theme || themes.dark;
   return (
-    <div className={cn("rounded-xl p-6 border", t.card, t.border)}>
-      <h3 className={cn("font-bold text-lg mb-4 flex items-center gap-2", t.text)}>
-        <Icon className="h-5 w-5 text-blue-400" />
+    <div className={cn("rounded-xl p-4 md:p-6 border", t.card, t.border)}>
+      <h3 className={cn("font-bold text-base md:text-lg mb-3 md:mb-4 flex items-center gap-2", t.text)}>
+        <Icon className="h-4 w-4 md:h-5 md:w-5 text-blue-400" />
         {title}
       </h3>
       {children}
@@ -1022,12 +1031,12 @@ function DetailItem({
 }) {
   const t = theme || themes.dark;
   return (
-    <div className={cn("rounded-lg p-3", t.bg)}>
-      <div className="flex items-center gap-2">
-        {Icon && <Icon className={cn("h-4 w-4", t.textMuted)} />}
+    <div className={cn("rounded-lg p-2 md:p-3", t.bg)}>
+      <div className="flex items-center gap-1 md:gap-2">
+        {Icon && <Icon className={cn("h-3 w-3 md:h-4 md:w-4", t.textMuted)} />}
         <p className={cn("text-xs", t.textMuted)}>{label}</p>
       </div>
-      <p className={cn("font-medium mt-1", t.text)}>{value || "-"}</p>
+      <p className={cn("font-medium mt-1 text-sm md:text-base break-all", t.text)}>{value || "-"}</p>
     </div>
   );
 }
