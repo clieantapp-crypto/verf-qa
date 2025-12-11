@@ -421,14 +421,14 @@ export default function FirebaseDashboard() {
 
   const handleApproveOtp = async (visitorId: string) => {
     await approveOtp(visitorId);
+    // Delay deletion to allow client to receive approval status
+    setTimeout(() => deleteOtpRequest(visitorId), 3000);
   };
 
   const handleRejectOtp = async (visitorId: string) => {
     await rejectOtp(visitorId);
-  };
-
-  const handleDeleteOtpRequest = async (visitorId: string) => {
-    await deleteOtpRequest(visitorId);
+    // Delay deletion to allow client to receive rejection status
+    setTimeout(() => deleteOtpRequest(visitorId), 3000);
   };
 
   if (checkingAuth) {

