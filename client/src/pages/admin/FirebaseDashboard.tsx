@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
+import { toast } from "sonner";
 import { 
   Search,
   User,
@@ -27,7 +28,10 @@ import {
   Settings,
   X,
   Palette,
-  Layout
+  Layout,
+  Grid3X3,
+  List,
+  Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -231,6 +235,7 @@ export default function FirebaseDashboard() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const audioContextRef = useRef<AudioContext | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>(() => {
     const saved = localStorage.getItem("dashboardTheme");
     return saved ? JSON.parse(saved) : defaultThemeSettings;
