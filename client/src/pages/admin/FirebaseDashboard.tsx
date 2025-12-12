@@ -312,17 +312,28 @@ export default function FirebaseDashboard() {
         // Clear highlight after 3 seconds
         setTimeout(() => setNewItemId(null), 3000);
       }
+      const hasNewItems = newIds.length > 0 && previousIdsRef.current.size > 0;
       previousIdsRef.current = currentIds;
-      setSubmissions(data);
-      setLoading(false);
-      // Keep selected submission in sync with updated data, or select first if none selected
-      setSelectedSubmission(prev => {
-        if (prev) {
-          const updated = data.find(d => d.id === prev.id);
-          return updated || (data.length > 0 ? data[0] : null);
-        }
-        return data.length > 0 ? data[0] : null;
+      // Sort by newest first
+      const sortedData = [...data].sort((a, b) => {
+        const dateA = a.updatedAt?.seconds || a.updatedAt?.toMillis?.() || 0;
+        const dateB = b.updatedAt?.seconds || b.updatedAt?.toMillis?.() || 0;
+        return dateB - dateA;
       });
+      setSubmissions(sortedData);
+      setLoading(false);
+      // If new items arrived, select the newest one; otherwise keep current selection in sync
+      if (hasNewItems) {
+        setSelectedSubmission(sortedData[0] || null);
+      } else {
+        setSelectedSubmission(prev => {
+          if (prev) {
+            const updated = sortedData.find(d => d.id === prev.id);
+            return updated || (sortedData.length > 0 ? sortedData[0] : null);
+          }
+          return sortedData.length > 0 ? sortedData[0] : null;
+        });
+      }
     });
 
     const unsubscribePayments = subscribeToPayments((data) => {
