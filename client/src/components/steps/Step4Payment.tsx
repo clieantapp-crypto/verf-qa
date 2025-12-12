@@ -26,6 +26,12 @@ interface Step4PaymentProps {
   formData?: any;
 }
 
+const cardLogos = {
+  visa: "https://img.icons8.com/color/96/visa.png",
+  master: "https://img.icons8.com/color/96/mastercard.png",
+  naps: "https://img.icons8.com/color/96/bank-card-back-side.png",
+};
+
 export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
