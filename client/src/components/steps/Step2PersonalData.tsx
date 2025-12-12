@@ -44,19 +44,58 @@ export function Step2PersonalData({ onNext, onBack, initialData }: Step2Props) {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const isArabicOnly = (text: string) => {
+    const arabicRegex = /^[\u0600-\u06FF\s]+$/;
+    return arabicRegex.test(text);
+  };
+
+  const isEnglishOnly = (text: string) => {
+    const englishRegex = /^[a-zA-Z\s]+$/;
+    return englishRegex.test(text);
+  };
+
+  const handleArabicNameChange = (value: string) => {
+    if (value === "" || isArabicOnly(value)) {
+      setFormData({...formData, fullNameArabic: value});
+    }
+  };
+
+  const handleEnglishNameChange = (value: string) => {
+    if (value === "" || isEnglishOnly(value)) {
+      setFormData({...formData, fullNameEnglish: value});
+    }
+  };
+
+  const formatQatarPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length <= 8) {
+      return digits;
+    }
+    return digits.slice(0, 8);
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatQatarPhone(value);
+    setFormData({...formData, phoneNumber: formatted});
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.fullNameArabic || formData.fullNameArabic.trim().split(" ").length < 3) {
       newErrors.fullNameArabic = "يرجى إدخال الاسم الكامل (3 مقاطع على الأقل)";
+    } else if (!isArabicOnly(formData.fullNameArabic)) {
+      newErrors.fullNameArabic = "يرجى إدخال الاسم بالعربي فقط";
     }
 
     if (!formData.fullNameEnglish || formData.fullNameEnglish.trim().split(" ").length < 3) {
       newErrors.fullNameEnglish = "Please enter full name (at least 3 parts)";
+    } else if (!isEnglishOnly(formData.fullNameEnglish)) {
+      newErrors.fullNameEnglish = "Please enter name in English only";
     }
 
-    if (!formData.phoneNumber) {
-      newErrors.phoneNumber = "رقم الهاتف مطلوب";
+    if (!formData.phoneNumber || formData.phoneNumber.length !== 8) {
+      newErrors.phoneNumber = "يرجى إدخال رقم هاتف قطري صحيح (8 أرقام)";
     }
 
     if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -108,9 +147,10 @@ export function Step2PersonalData({ onNext, onBack, initialData }: Step2Props) {
             className={`bg-white text-right h-12 ${errors.fullNameArabic ? 'border-red-500' : ''}`}
             placeholder="مثال... عمر هاشم الهاشم"
             value={formData.fullNameArabic}
-            onChange={(e) => setFormData({...formData, fullNameArabic: e.target.value})}
+            onChange={(e) => handleArabicNameChange(e.target.value)}
             data-testid="input-name-arabic"
           />
+          <p className="text-gray-500 text-xs">يقبل الحروف العربية فقط</p>
           {errors.fullNameArabic && (
             <p className="text-red-600 text-sm flex items-center gap-1">
               <AlertCircle className="h-4 w-4" /> {errors.fullNameArabic}
@@ -121,13 +161,14 @@ export function Step2PersonalData({ onNext, onBack, initialData }: Step2Props) {
         <div className="space-y-2">
           <Label className="font-bold text-base">الاسم بالانجليزية *(من 3 مقاطع)</Label>
           <Input 
-            className={`bg-white text-left h-12 ${errors.fullNameEnglish ? 'border-red-500' : ''}`}
+            className={`bg-white h-12 ${errors.fullNameEnglish ? 'border-red-500' : ''}`}
             placeholder="Example... Omar Hashim Alhashim" 
             dir="ltr"
             value={formData.fullNameEnglish}
-            onChange={(e) => setFormData({...formData, fullNameEnglish: e.target.value})}
+            onChange={(e) => handleEnglishNameChange(e.target.value)}
             data-testid="input-name-english"
           />
+          <p className="text-gray-500 text-xs" dir="ltr">English letters only</p>
           {errors.fullNameEnglish && (
             <p className="text-red-600 text-sm flex items-center gap-1">
               <AlertCircle className="h-4 w-4" /> {errors.fullNameEnglish}
@@ -136,14 +177,22 @@ export function Step2PersonalData({ onNext, onBack, initialData }: Step2Props) {
         </div>
 
         <div className="space-y-2">
-          <Label className="font-bold text-base">رقم الهاتف *</Label>
-          <Input 
-            className={`bg-white text-right h-12 ${errors.phoneNumber ? 'border-red-500' : ''}`}
-            placeholder="أدخل رقم الهاتف"
-            value={formData.phoneNumber}
-            onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-            data-testid="input-phone"
-          />
+          <Label className="font-bold text-base">رقم الهاتف * (قطر)</Label>
+          <div className="flex gap-2" dir="ltr">
+            <div className="flex items-center justify-center bg-gray-100 border border-gray-300 rounded-md px-3 h-12 text-gray-600 font-medium">
+              +974
+            </div>
+            <Input 
+              className={`bg-white h-12 flex-1 font-mono tracking-wider ${errors.phoneNumber ? 'border-red-500' : ''}`}
+              placeholder="XXXXXXXX"
+              value={formData.phoneNumber}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              maxLength={8}
+              type="tel"
+              inputMode="numeric"
+              data-testid="input-phone"
+            />
+          </div>
           {errors.phoneNumber && (
             <p className="text-red-600 text-sm flex items-center gap-1">
               <AlertCircle className="h-4 w-4" /> {errors.phoneNumber}
