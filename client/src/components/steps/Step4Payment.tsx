@@ -39,6 +39,7 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
   const [cardName, setCardName] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
+  const [cardType, setCardType] = useState<"visa" | "master" | "naps">("visa");
 
   // OTP State
   const [showOtp, setShowOtp] = useState(false);
@@ -233,10 +234,12 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Lock className="h-5 w-5 text-gray-700" />
+                    <img src={cardLogos[cardType]} alt={cardType} className="h-6 w-6 object-contain" />
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900">نظام التوثيق</p>
+                    <p className="font-bold text-gray-900">
+                      {cardType === "visa" ? "Visa" : cardType === "master" ? "Mastercard" : "Debit / NAPS"}
+                    </p>
                     <p className="text-xs text-gray-500">تحقق من الهوية</p>
                   </div>
                 </div>
@@ -290,10 +293,12 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <Lock className="h-5 w-5 text-gray-700" />
+                  <img src={cardLogos[cardType]} alt={cardType} className="h-6 w-6 object-contain" />
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900">نظام التوثيق</p>
+                  <p className="font-bold text-gray-900">
+                    {cardType === "visa" ? "Visa" : cardType === "master" ? "Mastercard" : "Debit / NAPS"}
+                  </p>
                   <p className="text-xs text-gray-500">تحقق من الهوية</p>
                 </div>
               </div>
@@ -438,7 +443,7 @@ export function Step4Payment({ onNext, onBack, formData }: Step4PaymentProps) {
             <Label className="font-bold text-sm text-gray-700">
               طريقة الدفع
             </Label>
-            <RadioGroup defaultValue="visa" className="grid grid-cols-3 gap-3">
+            <RadioGroup value={cardType} onValueChange={(v) => setCardType(v as "visa" | "master" | "naps")} className="grid grid-cols-3 gap-3">
               <label className="cursor-pointer border-2 border-transparent hover:border-gray-200 [&:has(:checked)]:border-blue-500 [&:has(:checked)]:bg-blue-50 rounded-lg p-3 flex flex-col items-center justify-center transition-all bg-gray-50">
                 <RadioGroupItem value="visa" id="visa" className="sr-only" />
                 <CreditCard className="h-8 w-8 mb-2 text-blue-600" />
