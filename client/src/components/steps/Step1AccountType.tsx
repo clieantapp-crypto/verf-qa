@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { UserPlus, LogIn } from "lucide-react";
+import { toast } from "sonner";
+import ReCAPTCHA from "react-google-recaptcha";
+
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
 
 interface Step1Props {
   onNext: (isNewAccount: boolean, accountType: string) => void;
@@ -10,11 +14,19 @@ interface Step1Props {
 
 export function Step1AccountType({ onNext }: Step1Props) {
   const [accountMode, setAccountMode] = useState<"new" | "existing">("new");
-  const [accountType, setAccountType] = useState<"citizen" | "visitor">(
-    "citizen",
-  );
+  const [accountType, setAccountType] = useState<"citizen" | "visitor">("citizen");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
+
+  const handleCaptchaChange = (token: string | null) => {
+    setCaptchaToken(token);
+  };
 
   const handleContinue = () => {
+    if (!captchaToken) {
+      toast.error("يرجى التحقق من أنك لست روبوت");
+      return;
+    }
     onNext(accountMode === "new", accountType);
   };
 
@@ -25,7 +37,6 @@ export function Step1AccountType({ onNext }: Step1Props) {
       </h2>
 
       <div className="space-y-8 max-w-md mx-auto">
-        {/* Account Mode Selection */}
         <div className="space-y-4">
           <Label className="font-bold text-lg block text-center">
             اختر نوع العملية
@@ -94,7 +105,6 @@ export function Step1AccountType({ onNext }: Step1Props) {
           </RadioGroup>
         </div>
 
-        {/* Account Type Selection - Only for new users */}
         {accountMode === "new" && (
           <div className="space-y-4 pt-4 border-t border-gray-200" dir="rtl">
             <Label className="font-bold text-lg block">نوع الحساب</Label>
@@ -136,6 +146,15 @@ export function Step1AccountType({ onNext }: Step1Props) {
             </RadioGroup>
           </div>
         )}
+
+        <div className="flex justify-center pt-4">
+          <ReCAPTCHA
+            ref={recaptchaRef}
+            sitekey={RECAPTCHA_SITE_KEY}
+            onChange={handleCaptchaChange}
+            hl="ar"
+          />
+        </div>
 
         <div className="pt-4">
           <Button
