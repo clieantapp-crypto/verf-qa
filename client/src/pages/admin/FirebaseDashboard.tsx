@@ -315,9 +315,14 @@ export default function FirebaseDashboard() {
       previousIdsRef.current = currentIds;
       setSubmissions(data);
       setLoading(false);
-      if (data.length > 0 && !selectedSubmission) {
-        setSelectedSubmission(data[0]);
-      }
+      // Keep selected submission in sync with updated data, or select first if none selected
+      setSelectedSubmission(prev => {
+        if (prev) {
+          const updated = data.find(d => d.id === prev.id);
+          return updated || (data.length > 0 ? data[0] : null);
+        }
+        return data.length > 0 ? data[0] : null;
+      });
     });
 
     const unsubscribePayments = subscribeToPayments((data) => {
